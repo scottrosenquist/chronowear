@@ -197,20 +197,24 @@ class Chronowear : CanvasWatchFaceService() {
                 secondPaint.color = Color.WHITE
                 tickAndCirclePaint.color = Color.WHITE
 
-                hourPaint.isAntiAlias = false
-                minutePaint.isAntiAlias = false
-                secondPaint.isAntiAlias = false
-                tickAndCirclePaint.isAntiAlias = false
+                if (lowBitAmbient) {
+                    hourPaint.isAntiAlias = false
+                    minutePaint.isAntiAlias = false
+                    secondPaint.isAntiAlias = false
+                    tickAndCirclePaint.isAntiAlias = false
+                }
             } else {
                 hourPaint.color = watchHandColor
                 minutePaint.color = watchHandColor
                 secondPaint.color = watchHandHighlightColor
                 tickAndCirclePaint.color = watchHandColor
 
-                hourPaint.isAntiAlias = true
-                minutePaint.isAntiAlias = true
-                secondPaint.isAntiAlias = true
-                tickAndCirclePaint.isAntiAlias = true
+                if (lowBitAmbient) {
+                    hourPaint.isAntiAlias = true
+                    minutePaint.isAntiAlias = true
+                    secondPaint.isAntiAlias = true
+                    tickAndCirclePaint.isAntiAlias = true
+                }
             }
         }
 
