@@ -38,8 +38,6 @@ private const val SECOND_TICK_STROKE_WIDTH = 2f
 
 private const val CENTER_GAP_AND_CIRCLE_RADIUS = 4f
 
-private const val SHADOW_RADIUS = 6f
-
 /**
  * Analog watch face with a ticking second hand. In ambient mode, the second hand isn't
  * shown. On devices with low-bit ambient mode, the hands are drawn without anti-aliasing in ambient
@@ -88,7 +86,6 @@ class Chronowear : CanvasWatchFaceService() {
         /* Colors for all hands (hour, minute, seconds, ticks) based on photo loaded. */
         private var watchHandColor: Int = 0
         private var watchHandHighlightColor: Int = 0
-        private var watchHandShadowColor: Int = 0
 
         private lateinit var hourPaint: Paint
         private lateinit var minutePaint: Paint
@@ -134,15 +131,12 @@ class Chronowear : CanvasWatchFaceService() {
             /* Set defaults for colors */
             watchHandColor = Color.WHITE
             watchHandHighlightColor = Color.RED
-            watchHandShadowColor = Color.BLACK
 
             hourPaint = Paint().apply {
                 color = watchHandColor
                 strokeWidth = HOUR_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
-                setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
             }
 
             minutePaint = Paint().apply {
@@ -150,8 +144,6 @@ class Chronowear : CanvasWatchFaceService() {
                 strokeWidth = MINUTE_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
-                setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
             }
 
             secondPaint = Paint().apply {
@@ -159,8 +151,6 @@ class Chronowear : CanvasWatchFaceService() {
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
-                setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
             }
 
             tickAndCirclePaint = Paint().apply {
@@ -168,8 +158,6 @@ class Chronowear : CanvasWatchFaceService() {
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
                 style = Paint.Style.STROKE
-                setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
             }
         }
 
@@ -213,12 +201,6 @@ class Chronowear : CanvasWatchFaceService() {
                 minutePaint.isAntiAlias = false
                 secondPaint.isAntiAlias = false
                 tickAndCirclePaint.isAntiAlias = false
-
-                hourPaint.clearShadowLayer()
-                minutePaint.clearShadowLayer()
-                secondPaint.clearShadowLayer()
-                tickAndCirclePaint.clearShadowLayer()
-
             } else {
                 hourPaint.color = watchHandColor
                 minutePaint.color = watchHandColor
@@ -229,15 +211,6 @@ class Chronowear : CanvasWatchFaceService() {
                 minutePaint.isAntiAlias = true
                 secondPaint.isAntiAlias = true
                 tickAndCirclePaint.isAntiAlias = true
-
-                hourPaint.setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
-                minutePaint.setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
-                secondPaint.setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
-                tickAndCirclePaint.setShadowLayer(
-                        SHADOW_RADIUS, 0f, 0f, watchHandShadowColor)
             }
         }
 
