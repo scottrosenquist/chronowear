@@ -4,10 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
+import android.graphics.*
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
@@ -20,6 +18,7 @@ import android.widget.Toast
 import java.lang.ref.WeakReference
 import java.util.Calendar
 import java.util.TimeZone
+import kotlin.math.roundToInt
 
 private const val INTERACTIVE_UPDATE_RATE_MS = 1000
 
@@ -81,6 +80,10 @@ class Chronowear : CanvasWatchFaceService() {
 
         private lateinit var backgroundPaint: Paint
 
+        private var statusIconSize: Int = 1
+        private lateinit var muteIcon: Drawable
+        private lateinit var muteAmbientIcon: Drawable
+
         private var ambient: Boolean = false
         private var lowBitAmbient: Boolean = false
         private var burnInProtection: Boolean = false
@@ -112,6 +115,18 @@ class Chronowear : CanvasWatchFaceService() {
             backgroundPaint = Paint().apply {
                 color = Color.BLACK
             }
+        }
+
+        private fun initializeStatusIcons() {
+            fun Drawable.setDefaultBounds(): Drawable {
+                this.setBounds(0, 0, statusIconSize, statusIconSize)
+                return this
+            }
+
+            fun getAndBoundDrawable(drawableId: Int) = getDrawable(drawableId).setDefaultBounds()
+
+            muteIcon = getAndBoundDrawable(R.drawable.ic_stat_notify_mute)
+            muteAmbientIcon = getAndBoundDrawable(R.drawable.ic_stat_notify_mute_ambient)
         }
 
         private fun initializeWatchFace() {
@@ -206,15 +221,8 @@ class Chronowear : CanvasWatchFaceService() {
 
         override fun onInterruptionFilterChanged(interruptionFilter: Int) {
             super.onInterruptionFilterChanged(interruptionFilter)
-            val inMuteMode = interruptionFilter == WatchFaceService.INTERRUPTION_FILTER_NONE
-
-            if (muteMode != inMuteMode) {
-                muteMode = inMuteMode
-                hourPaint.alpha = if (inMuteMode) 100 else 255
-                minutePaint.alpha = if (inMuteMode) 100 else 255
-                secondPaint.alpha = if (inMuteMode) 80 else 255
-                invalidate()
-            }
+            muteMode = interruptionFilter == WatchFaceService.INTERRUPTION_FILTER_PRIORITY
+            invalidate()
         }
 
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
@@ -226,6 +234,9 @@ class Chronowear : CanvasWatchFaceService() {
             secondHandLength = (centerX * 0.875).toFloat()
             minuteHandLength = (centerX * 0.75).toFloat()
             hourHandLength = (centerX * 0.5).toFloat()
+
+            statusIconSize = (centerX * 0.1f).roundToInt()
+            initializeStatusIcons()
         }
 
         override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
@@ -246,11 +257,24 @@ class Chronowear : CanvasWatchFaceService() {
             calendar.timeInMillis = now
 
             drawBackground(canvas)
+            drawStatusIcons(canvas)
             drawWatchFace(canvas)
         }
 
         private fun drawBackground(canvas: Canvas) {
             canvas.drawColor(Color.BLACK)
+        }
+
+        private fun drawStatusIcons(canvas: Canvas) {
+            fun Canvas.drawStatusIconDrawable(drawable: Drawable, x: Float, y: Float, color: Int) {
+                this.save()
+                this.translate(x - drawable.bounds.right / 2f, y - drawable.bounds.bottom / 2f)
+                drawable.setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
+                drawable.draw(this)
+                this.restore()
+            }
+
+            if (muteMode) canvas.drawStatusIconDrawable(if (ambient) muteAmbientIcon else muteIcon, centerX, centerY / 4f, Color.WHITE)
         }
 
         private fun drawWatchFace(canvas: Canvas) {
