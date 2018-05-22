@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.*
 import android.graphics.drawable.Drawable
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
@@ -13,7 +14,6 @@ import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
 import android.view.SurfaceHolder
-import android.widget.Toast
 
 import java.lang.ref.WeakReference
 import java.util.Calendar
@@ -62,7 +62,10 @@ class Chronowear : CanvasWatchFaceService() {
         private lateinit var calendar: Calendar
 
         private var registeredTimeZoneReceiver = false
+        private var registeredBatteryReceiver = false
         private var muteMode: Boolean = false
+        private var isCharging: Boolean = false
+        private var chargingLevel: Int = 100
         private var centerX: Float = 0F
         private var centerY: Float = 0F
 
@@ -83,6 +86,13 @@ class Chronowear : CanvasWatchFaceService() {
         private var statusIconSize: Int = 1
         private lateinit var muteIcon: Drawable
         private lateinit var muteAmbientIcon: Drawable
+        private lateinit var chargingIconFull: Drawable
+        private lateinit var chargingIcon90: Drawable
+        private lateinit var chargingIcon80: Drawable
+        private lateinit var chargingIcon60: Drawable
+        private lateinit var chargingIcon50: Drawable
+        private lateinit var chargingIcon30: Drawable
+        private lateinit var chargingIcon20: Drawable
 
         private var ambient: Boolean = false
         private var lowBitAmbient: Boolean = false
@@ -93,9 +103,40 @@ class Chronowear : CanvasWatchFaceService() {
 
         private val timeZoneReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                calendar.timeZone = TimeZone.getDefault()
+                updateTimeZone()
+            }
+        }
+
+        private fun updateTimeZone() {
+            calendar.timeZone = TimeZone.getDefault()
+            invalidate()
+        }
+
+        private val batteryReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                println("batteryReceiver onReceive")
+                updateBatteryInfo(intent)
+//                intent.getStringExtra("icon-small") // should find out what this icon looks like
+//                isCharging = intent.getIntExtra("status", BatteryManager.BATTERY_STATUS_UNKNOWN)
+//                chargingLevel = intent.getIntExtra("level", 100)
+//                intent.getint
+//                for (key in intent.extras.keySet()) {
+//                    print(key)
+//                    println(": "+intent.extras.get(key))
+//                }
+//                BatteryManager.
                 invalidate()
             }
+        }
+
+        private fun updateBatteryInfo(intent: Intent) {
+            val chargingStatus = intent.getIntExtra("status", -1)
+            isCharging = when (chargingStatus) {
+                BatteryManager.BATTERY_STATUS_CHARGING, BatteryManager.BATTERY_STATUS_FULL -> true
+                else -> false
+            }
+
+            chargingLevel = intent.getIntExtra("level", 100)
         }
 
         override fun onCreate(holder: SurfaceHolder) {
@@ -127,6 +168,14 @@ class Chronowear : CanvasWatchFaceService() {
 
             muteIcon = getAndBoundDrawable(R.drawable.ic_stat_notify_mute)
             muteAmbientIcon = getAndBoundDrawable(R.drawable.ic_stat_notify_mute_ambient)
+
+            chargingIconFull = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_full)
+            chargingIcon90 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_90)
+            chargingIcon80 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_80)
+            chargingIcon60 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_60)
+            chargingIcon50 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_50)
+            chargingIcon30 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_30)
+            chargingIcon20 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_20)
         }
 
         private fun initializeWatchFace() {
@@ -275,6 +324,25 @@ class Chronowear : CanvasWatchFaceService() {
             }
 
             if (muteMode) canvas.drawStatusIconDrawable(if (ambient) muteAmbientIcon else muteIcon, centerX, centerY / 4f, Color.WHITE)
+
+            fun determineChargingIcon(): Drawable {
+                return chargingLevel.let {
+                    when {
+                        it == 100 -> chargingIconFull
+                        it > 90 -> chargingIcon90
+                        it > 80 -> chargingIcon80
+                        it > 60 -> chargingIcon60
+                        it > 50 -> chargingIcon50
+                        it > 30 -> chargingIcon30
+                        else -> chargingIcon20
+                    }
+                }
+            }
+
+            if (isCharging) canvas.drawStatusIconDrawable(determineChargingIcon(), centerX, centerY / 4f, Color.WHITE)
+//                if (ambient) canvas.drawStatusIconDrawable(determineChargingIcon(), centerX, centerY / 4f, Color.WHITE)
+//                else
+//            if (shouldShowChargingIcon()) canvas.drawStatusIconDrawable(chargingIcon20, centerX, centerY / 4f, Color.WHITE)
         }
 
         private fun drawWatchFace(canvas: Canvas) {
@@ -340,19 +408,21 @@ class Chronowear : CanvasWatchFaceService() {
             super.onVisibilityChanged(visible)
 
             if (visible) {
-                registerReceiver()
+                registerTimeZoneReceiver()
+                registerBatteryReceiver()
                 /* Update time zone in case it changed while we weren't visible. */
-                calendar.timeZone = TimeZone.getDefault()
-                invalidate()
+                updateTimeZone()
+                updateBatteryInfo(this@Chronowear.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)))
             } else {
-                unregisterReceiver()
+                unregisterTimeZoneReceiver()
+                unregisterBatteryReceiver()
             }
 
             /* Check and trigger whether or not timer should be running (only in active mode). */
             updateTimer()
         }
 
-        private fun registerReceiver() {
+        private fun registerTimeZoneReceiver() {
             if (registeredTimeZoneReceiver) {
                 return
             }
@@ -361,12 +431,29 @@ class Chronowear : CanvasWatchFaceService() {
             this@Chronowear.registerReceiver(timeZoneReceiver, filter)
         }
 
-        private fun unregisterReceiver() {
+        private fun unregisterTimeZoneReceiver() {
             if (!registeredTimeZoneReceiver) {
                 return
             }
             registeredTimeZoneReceiver = false
             this@Chronowear.unregisterReceiver(timeZoneReceiver)
+        }
+
+        private fun registerBatteryReceiver() {
+            if (registeredBatteryReceiver) {
+                return
+            }
+            registeredBatteryReceiver = true
+            val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            this@Chronowear.registerReceiver(batteryReceiver, filter)
+        }
+
+        private fun unregisterBatteryReceiver() {
+            if (!registeredBatteryReceiver) {
+                return
+            }
+            registeredBatteryReceiver = false
+            this@Chronowear.unregisterReceiver(batteryReceiver)
         }
 
         /**
