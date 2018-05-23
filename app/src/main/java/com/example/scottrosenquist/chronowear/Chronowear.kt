@@ -114,23 +114,14 @@ class Chronowear : CanvasWatchFaceService() {
 
         private val batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                println("batteryReceiver onReceive")
                 updateBatteryInfo(intent)
-//                intent.getStringExtra("icon-small") // should find out what this icon looks like
-//                isCharging = intent.getIntExtra("status", BatteryManager.BATTERY_STATUS_UNKNOWN)
-//                chargingLevel = intent.getIntExtra("level", 100)
-//                intent.getint
-//                for (key in intent.extras.keySet()) {
-//                    print(key)
-//                    println(": "+intent.extras.get(key))
-//                }
-//                BatteryManager.
                 invalidate()
             }
         }
 
         private fun updateBatteryInfo(intent: Intent) {
             val chargingStatus = intent.getIntExtra("status", -1)
+
             isCharging = when (chargingStatus) {
                 BatteryManager.BATTERY_STATUS_CHARGING, BatteryManager.BATTERY_STATUS_FULL -> true
                 else -> false
@@ -323,7 +314,14 @@ class Chronowear : CanvasWatchFaceService() {
                 this.restore()
             }
 
-            if (muteMode) canvas.drawStatusIconDrawable(if (ambient) muteAmbientIcon else muteIcon, centerX, centerY / 4f, Color.WHITE)
+            fun MutableList<Drawable>.drawOnCanvas(canvas: Canvas, x: Float, y: Float, color: Int) {
+                var adjustedX = x - statusIconSize / 2 * (this.size - 1)
+                val iterator = this.listIterator()
+                while(iterator.hasNext()) {
+                    canvas.drawStatusIconDrawable(iterator.next(), adjustedX, y, color)
+                    adjustedX += statusIconSize
+                }
+            }
 
             fun determineChargingIcon(): Drawable {
                 return chargingLevel.let {
@@ -339,10 +337,10 @@ class Chronowear : CanvasWatchFaceService() {
                 }
             }
 
-            if (isCharging) canvas.drawStatusIconDrawable(determineChargingIcon(), centerX, centerY / 4f, Color.WHITE)
-//                if (ambient) canvas.drawStatusIconDrawable(determineChargingIcon(), centerX, centerY / 4f, Color.WHITE)
-//                else
-//            if (shouldShowChargingIcon()) canvas.drawStatusIconDrawable(chargingIcon20, centerX, centerY / 4f, Color.WHITE)
+            val statusIconsToDraw: MutableList<Drawable> = ArrayList() // todo: make this work with mutableListOf<Drawable>()
+            if (muteMode) statusIconsToDraw.add(if (ambient) muteAmbientIcon else muteIcon)
+            if (isCharging) statusIconsToDraw.add(determineChargingIcon())
+            statusIconsToDraw.drawOnCanvas(canvas, centerX, centerY / 4f, Color.WHITE)
         }
 
         private fun drawWatchFace(canvas: Canvas) {
