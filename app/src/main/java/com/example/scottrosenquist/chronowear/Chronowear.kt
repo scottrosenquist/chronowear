@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.*
 import android.graphics.drawable.Drawable
+import android.net.ConnectivityManager
 import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
@@ -63,8 +64,10 @@ class Chronowear : CanvasWatchFaceService() {
 
         private var registeredTimeZoneReceiver = false
         private var registeredBatteryReceiver = false
+        private var registeredNetworkStatusReceiver = false
         private var muteMode: Boolean = false
         private var isCharging: Boolean = false
+        private var isConnected: Boolean = false
         private var chargingLevel: Int = 100
         private var centerX: Float = 0F
         private var centerY: Float = 0F
@@ -93,6 +96,7 @@ class Chronowear : CanvasWatchFaceService() {
         private lateinit var chargingIcon50: Drawable
         private lateinit var chargingIcon30: Drawable
         private lateinit var chargingIcon20: Drawable
+        private lateinit var noConnectionIcon: Drawable
 
         private var ambient: Boolean = false
         private var lowBitAmbient: Boolean = false
@@ -128,6 +132,17 @@ class Chronowear : CanvasWatchFaceService() {
             }
 
             chargingLevel = intent.getIntExtra("level", 100)
+        }
+
+        private val networkStatusReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                updateNetworkStatus()
+                invalidate()
+            }
+        }
+
+        private fun updateNetworkStatus() {
+            isConnected = (getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).activeNetworkInfo?.isConnected == true
         }
 
         override fun onCreate(holder: SurfaceHolder) {
@@ -167,6 +182,8 @@ class Chronowear : CanvasWatchFaceService() {
             chargingIcon50 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_50)
             chargingIcon30 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_30)
             chargingIcon20 = getAndBoundDrawable(R.drawable.ic_stat_notify_charging_20)
+
+            noConnectionIcon = getAndBoundDrawable(R.drawable.ic_stat_notify_no_connection)
         }
 
         private fun initializeWatchFace() {
@@ -340,6 +357,7 @@ class Chronowear : CanvasWatchFaceService() {
             val statusIconsToDraw: MutableList<Drawable> = ArrayList() // todo: make this work with mutableListOf<Drawable>()
             if (muteMode) statusIconsToDraw.add(if (ambient) muteAmbientIcon else muteIcon)
             if (isCharging) statusIconsToDraw.add(determineChargingIcon())
+            if (!isConnected) statusIconsToDraw.add(noConnectionIcon)
             statusIconsToDraw.drawOnCanvas(canvas, centerX, centerY / 4f, Color.WHITE)
         }
 
@@ -408,12 +426,15 @@ class Chronowear : CanvasWatchFaceService() {
             if (visible) {
                 registerTimeZoneReceiver()
                 registerBatteryReceiver()
+                registerNetworkStatusReceiver()
                 /* Update time zone in case it changed while we weren't visible. */
                 updateTimeZone()
                 updateBatteryInfo(this@Chronowear.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)))
+                updateNetworkStatus()
             } else {
                 unregisterTimeZoneReceiver()
                 unregisterBatteryReceiver()
+                unregisterNetworkStatusReceiver()
             }
 
             /* Check and trigger whether or not timer should be running (only in active mode). */
@@ -452,6 +473,23 @@ class Chronowear : CanvasWatchFaceService() {
             }
             registeredBatteryReceiver = false
             this@Chronowear.unregisterReceiver(batteryReceiver)
+        }
+
+        private fun registerNetworkStatusReceiver() {
+            if (registeredNetworkStatusReceiver) {
+                return
+            }
+            registeredNetworkStatusReceiver = true
+            val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+            this@Chronowear.registerReceiver(networkStatusReceiver, filter)
+        }
+
+        private fun unregisterNetworkStatusReceiver() {
+            if (!registeredNetworkStatusReceiver) {
+                return
+            }
+            registeredNetworkStatusReceiver = false
+            this@Chronowear.unregisterReceiver(networkStatusReceiver)
         }
 
         /**
