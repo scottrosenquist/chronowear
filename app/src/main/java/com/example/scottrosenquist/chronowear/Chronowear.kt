@@ -1,16 +1,15 @@
 package com.example.scottrosenquist.chronowear
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
+import android.content.*
+import android.content.pm.ProviderInfo
+import android.graphics.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
+import android.support.annotation.Nullable
+import android.support.v4.widget.TextViewCompat
+import android.support.wearable.complications.*
+import android.support.wearable.complications.rendering.ComplicationDrawable
 import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
@@ -20,6 +19,16 @@ import android.widget.Toast
 import java.lang.ref.WeakReference
 import java.util.Calendar
 import java.util.TimeZone
+import java.util.concurrent.Executors
+import android.support.wearable.complications.ComplicationProviderInfo
+import android.support.wearable.complications.ProviderInfoRetriever
+import android.support.wearable.complications.rendering.TextRenderer
+import android.text.TextPaint
+import android.widget.TextView
+import org.w3c.dom.Text
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+
 
 private const val INTERACTIVE_UPDATE_RATE_MS = 1000
 
@@ -27,6 +36,8 @@ private const val INTERACTIVE_UPDATE_RATE_MS = 1000
  * Handler message id for updating the time periodically in interactive mode.
  */
 private const val MSG_UPDATE_TIME = 0
+
+private const val NOTIFICATION_COMPLICATION_ID = 0
 
 private const val HOUR_STROKE_WIDTH = 5f
 private const val MINUTE_STROKE_WIDTH = 3f
@@ -64,6 +75,8 @@ class Chronowear : CanvasWatchFaceService() {
 
         private var registeredTimeZoneReceiver = false
         private var muteMode: Boolean = false
+        private var faceWidth = 0
+        private var faceHeight = 0
         private var centerX: Float = 0F
         private var centerY: Float = 0F
 
@@ -85,6 +98,21 @@ class Chronowear : CanvasWatchFaceService() {
         private var lowBitAmbient: Boolean = false
         private var burnInProtection: Boolean = false
 
+        private var shouldShowNotification = true
+        private var notificationComplicationData: ComplicationData? = null
+        private lateinit var notificationTimePaint: TextPaint
+        private lateinit var notificationTitlePaint: TextPaint
+        private lateinit var notificationTextPaint: TextPaint
+        private lateinit var notificationTimeRenderer: TextRenderer
+        private lateinit var notificationTitleRenderer: TextRenderer
+        private lateinit var notificationTextRenderer: TextRenderer
+        private lateinit var notificationTimeBounds: Rect
+        private lateinit var notificationTitleBounds: Rect
+        private lateinit var notificationTextBounds: Rect
+        private lateinit var notificationTimeFormat: SimpleDateFormat
+        private lateinit var notificationTimeTextView: TextView
+//        private lateinit var notificationComplicationDrawable: ComplicationDrawable
+
         /* Handler to update the time once a second in interactive mode. */
         private val updateTimeHandler = EngineHandler(this)
 
@@ -97,14 +125,17 @@ class Chronowear : CanvasWatchFaceService() {
 
         override fun onCreate(holder: SurfaceHolder) {
             super.onCreate(holder)
+            println("new change added 000")
 
             setWatchFaceStyle(WatchFaceStyle.Builder(this@Chronowear)
                     .setAcceptsTapEvents(true)
+                    .setHideStatusBar(true)
                     .build())
 
             calendar = Calendar.getInstance()
 
             initializeBackground()
+            initializeNotificationComplication()
             initializeWatchFace()
         }
 
@@ -114,7 +145,54 @@ class Chronowear : CanvasWatchFaceService() {
             }
         }
 
+        private fun initializeNotificationComplication() {
+//            notificationComplicationDrawable = getDrawable(R.drawable.notification_complication_style) as ComplicationDrawable
+//            notificationComplicationDrawable = ComplicationDrawable(this@Chronowear)
+//            notificationComplicationDrawable.
+//            notificationComplicationDrawable.setNoDataText("<No Data>")
+//            notificationComplicationDrawable.setComplicationData(ComplicationData.Builder(ComplicationData.TYPE_LONG_TEXT).build())
+
+
+//            val providerInfoRetriever = ProviderInfoRetriever(this@Chronowear, Executors.newCachedThreadPool())
+//            providerInfoRetriever.init()
+//            providerInfoRetriever.retrieveProviderInfo(
+//                    ProviderInfoRetriever.OnProviderInfoReceivedCallback {
+//                        @Override fun onProviderReceived() {}
+//                    },
+//                    ComponentName(this@Chronowear, Chronowear::class.java),
+//                    NOTIFICATION_COMPLICATION_ID)
+//            providerInfoRetriever.retrieveProviderInfo(
+//                    object: ProviderInfoRetriever.OnProviderInfoReceivedCallback() {
+//                        override fun onProviderInfoReceived(
+//                                watchFaceComplicationId: Int,
+//                                @Nullable complicationProviderInfo: ComplicationProviderInfo?) {
+//
+//                            println("onProviderInfoReceived: " + complicationProviderInfo!!)
+//
+//                            updateComplicationViews(watchFaceComplicationId, complicationProviderInfo)
+//                        }
+//                    },
+//                    ComponentName(this@Chronowear, Chronowear::class.java),
+//                    NOTIFICATION_COMPLICATION_ID)
+
+
+
+
+
+
+
+
+
+//            notificationComplicationDrawable.
+//            setDefaultSystemComplicationProvider(NOTIFICATION_COMPLICATION_ID, SystemProviders.NEXT_EVENT, ComplicationData.TYPE_LONG_TEXT)
+//            setDefaultComplicationProvider(NOTIFICATION_COMPLICATION_ID, ComponentName(this@Chronowear, Chronowear::class.java), ComplicationData.TYPE_LONG_TEXT)
+//            ComponentName()
+            setActiveComplications(NOTIFICATION_COMPLICATION_ID)
+//            notificationComplicationDrawable.setContext(this@Chronowear)
+        }
+
         private fun initializeWatchFace() {
+            println("initializeWatchFace()")
             watchHandColor = Color.WHITE
             watchHandHighlightColor = Color.RED
 
@@ -137,6 +215,7 @@ class Chronowear : CanvasWatchFaceService() {
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
+                style = Paint.Style.STROKE
             }
 
             tickAndCirclePaint = Paint().apply {
@@ -145,6 +224,41 @@ class Chronowear : CanvasWatchFaceService() {
                 isAntiAlias = true
                 style = Paint.Style.STROKE
             }
+
+            notificationTimePaint = TextPaint().apply {
+                color = watchHandColor
+                isAntiAlias = true
+                textSize = 48f
+            }
+
+            notificationTitlePaint = TextPaint().apply {
+                color = watchHandColor
+                isAntiAlias = true
+                typeface = Typeface.DEFAULT_BOLD
+                textSize = 48f
+            }
+
+            notificationTextPaint = TextPaint().apply {
+                color = watchHandColor
+                isAntiAlias = true
+                textSize = 36f
+            }
+
+            notificationTimeRenderer = TextRenderer()
+            notificationTimeRenderer.setPaint(notificationTimePaint)
+
+            notificationTitleRenderer = TextRenderer()
+            notificationTitleRenderer.setPaint(notificationTitlePaint)
+            notificationTitleRenderer.setMinimumCharactersShown(999)
+
+            notificationTextRenderer = TextRenderer()
+            notificationTextRenderer.setPaint(notificationTextPaint)
+            notificationTextRenderer.setMinimumCharactersShown(999)
+
+//            notificationTimeFormat = SimpleDateFormat("h:mm a")
+            notificationTimeFormat = DateFormat.getTimeInstance(DateFormat.SHORT) as SimpleDateFormat
+
+            notificationTimeTextView = TextView(this@Chronowear)
         }
 
         override fun onDestroy() {
@@ -160,6 +274,23 @@ class Chronowear : CanvasWatchFaceService() {
                     WatchFaceService.PROPERTY_BURN_IN_PROTECTION, false)
         }
 
+        override fun onComplicationDataUpdate(complicationId: Int, complicationData: ComplicationData?) {
+            super.onComplicationDataUpdate(complicationId, complicationData)
+            if (complicationData != null) {
+//                println("contentDescription: "+complicationData.contentDescription)
+//                println("imageContentDescription: "+complicationData.imageContentDescription)
+                println("longText: "+complicationData.longText?.getText(this@Chronowear, 0))
+                println("longTitle: "+complicationData.longTitle?.getText(this@Chronowear, 0))
+            }
+
+
+
+            notificationComplicationData = complicationData
+//            notificationComplicationDrawable.setComplicationData(complicationData)
+
+            invalidate()
+        }
+
         override fun onTimeTick() {
             super.onTimeTick()
             invalidate()
@@ -170,6 +301,9 @@ class Chronowear : CanvasWatchFaceService() {
             ambient = inAmbientMode
 
             updateWatchHandStyle()
+            updateNotificationText()
+
+//            notificationComplicationDrawable.setInAmbientMode(ambient)
 
             // Check and trigger whether or not timer should be running (only
             // in active mode).
@@ -204,6 +338,12 @@ class Chronowear : CanvasWatchFaceService() {
             }
         }
 
+        private fun updateNotificationText() {
+            notificationTimeRenderer.setInAmbientMode(ambient)
+            notificationTitleRenderer.setInAmbientMode(ambient)
+            notificationTextRenderer.setInAmbientMode(ambient)
+        }
+
         override fun onInterruptionFilterChanged(interruptionFilter: Int) {
             super.onInterruptionFilterChanged(interruptionFilter)
             val inMuteMode = interruptionFilter == WatchFaceService.INTERRUPTION_FILTER_NONE
@@ -220,12 +360,51 @@ class Chronowear : CanvasWatchFaceService() {
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             super.onSurfaceChanged(holder, format, width, height)
 
+            faceWidth = width
+            faceHeight = height
+
             centerX = width / 2f
             centerY = height / 2f
 
             secondHandLength = (centerX * 0.875).toFloat()
             minuteHandLength = (centerX * 0.75).toFloat()
             hourHandLength = (centerX * 0.5).toFloat()
+
+//            setNotificationComplicationBounds()
+            setNotificationBounds()
+        }
+
+        fun setNotificationBounds() {
+            println("setNotificationBounds()")
+            notificationTimeBounds = Rect(0, 0, faceWidth, faceHeight / 4)
+            notificationTitleBounds = Rect(faceWidth / 4, faceHeight / 4, faceWidth * 3 / 4, faceHeight / 2)
+            notificationTextBounds = Rect(0, faceHeight / 2, faceWidth, faceHeight)
+//            notificationTimePaint.textSize = notificationTimeBounds.height().toFloat()
+
+//            var test: TextView = TextViewCompat()
+//            var test = TextView("test")
+
+        }
+
+        fun setNotificationComplicationBounds() {
+            // For most Wear devices, width and height are the same, so we just chose one (width).
+            val complicationWidth = centerX * 4f / 3f
+            val complicationHeight = centerX / 2f
+            val midpointOfScreen = centerX
+
+            val horizontalOffset = midpointOfScreen - complicationWidth / 2
+            val verticalOffset = (midpointOfScreen - complicationHeight) / 2
+
+            val bounds =
+            // Left, Top, Right, Bottom
+                    Rect(
+                            horizontalOffset.toInt(),
+                            verticalOffset.toInt(),
+                            (horizontalOffset + complicationWidth).toInt(),
+                            (verticalOffset + complicationHeight).toInt())
+            val fullScreenBounds = Rect(0, 0, (centerX * 2f).toInt(), (centerY * 2f).toInt())
+
+//            notificationComplicationDrawable.setBounds(fullScreenBounds)
         }
 
         override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
@@ -235,6 +414,33 @@ class Chronowear : CanvasWatchFaceService() {
                 WatchFaceService.TAP_TYPE_TOUCH_CANCEL -> {
                 }
                 WatchFaceService.TAP_TYPE_TAP -> {
+                    if (notificationComplicationData != null) {
+                        println(notificationComplicationData?.type)
+                        when (notificationComplicationData?.type) {
+                            ComplicationData.TYPE_NOT_CONFIGURED -> {
+                                println("not configured")
+                            }
+                            ComplicationData.TYPE_NO_PERMISSION -> {
+                                println("no permission")
+                                startActivity(ComplicationHelperActivity.createPermissionRequestHelperIntent(this@Chronowear, ComponentName(this@Chronowear, Chronowear::class.java)))
+                            }
+                            ComplicationData.TYPE_EMPTY -> {
+                                println("empty")
+                            }
+                            ComplicationData.TYPE_NO_DATA -> {
+                                println("no data")
+                            }
+                            else -> {
+                                println("else")
+//                            notificationComplicationData?.tapAction?.send()
+//                                shouldShowNotification = !shouldShowNotification
+                                startActivity(ComplicationHelperActivity.createProviderChooserHelperIntent(this@Chronowear, ComponentName(this@Chronowear, Chronowear::class.java), NOTIFICATION_COMPLICATION_ID, ComplicationData.TYPE_LONG_TEXT))
+                            }
+                        }
+                    } else {
+                        println("notificationComplicationData is null")
+                        startActivity(ComplicationHelperActivity.createProviderChooserHelperIntent(this@Chronowear, ComponentName(this@Chronowear, Chronowear::class.java), NOTIFICATION_COMPLICATION_ID, ComplicationData.TYPE_LONG_TEXT))
+                    }
 
                 }
             }
@@ -246,11 +452,41 @@ class Chronowear : CanvasWatchFaceService() {
             calendar.timeInMillis = now
 
             drawBackground(canvas)
-            drawWatchFace(canvas)
+
+            if (shouldShowNotification) {
+                drawNotificationComplication(canvas)
+            } else {
+                drawWatchFace(canvas)
+            }
         }
 
         private fun drawBackground(canvas: Canvas) {
             canvas.drawColor(Color.BLACK)
+        }
+
+        private fun drawNotificationComplication(canvas: Canvas) {
+            canvas.drawRect(notificationTimeBounds, secondPaint)
+            canvas.drawRect(notificationTitleBounds, secondPaint)
+            canvas.drawRect(notificationTextBounds, secondPaint)
+//            notificationTimeRenderer.draw(canvas)
+//            val now = System.currentTimeMillis()
+//            val calendar = Calendar.getInstance()
+            notificationTimeRenderer.setText(notificationTimeFormat.format(calendar.timeInMillis))
+            notificationTimeRenderer.setText("12:59 PM")
+            notificationTimeRenderer.draw(canvas, notificationTimeBounds)
+
+            notificationTitleRenderer.setText(notificationComplicationData?.longTitle?.getText(this@Chronowear, calendar.timeInMillis))
+            notificationTitleRenderer.draw(canvas, notificationTitleBounds)
+
+//            notificationTextRenderer.setText(notificationComplicationData?.longText?.getText(this@Chronowear, calendar.timeInMillis))
+//            notificationTextRenderer.draw(canvas, notificationTextBounds)
+            var test = TextView(this@Chronowear)
+            test.text = notificationComplicationData?.longTitle?.getText(this@Chronowear, calendar.timeInMillis)
+//            test.size
+            TextViewCompat.setAutoSizeTextTypeWithDefaults(test, TextViewCompat.AUTO_SIZE_TEXT_TYPE_UNIFORM)
+            test.draw(canvas)
+
+//            notificationComplicationDrawable.draw(canvas, currentTimeMillis)
         }
 
         private fun drawWatchFace(canvas: Canvas) {
@@ -374,6 +610,8 @@ class Chronowear : CanvasWatchFaceService() {
                 updateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs)
             }
         }
+
+
     }
 }
 
