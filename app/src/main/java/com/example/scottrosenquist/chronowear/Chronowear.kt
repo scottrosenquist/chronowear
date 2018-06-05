@@ -1,5 +1,6 @@
 package com.example.scottrosenquist.chronowear
 
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,14 +9,13 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
-import android.os.Bundle
-import android.os.Handler
-import android.os.Message
+import android.os.*
 import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
 import android.view.SurfaceHolder
 import android.widget.Toast
+import java.lang.System.getProperties
 
 import java.lang.ref.WeakReference
 import java.util.Calendar
@@ -87,6 +87,8 @@ class Chronowear : CanvasWatchFaceService() {
 
         /* Handler to update the time once a second in interactive mode. */
         private val updateTimeHandler = EngineHandler(this)
+
+        private var touchTimeDiff = 0L;
 
         private val timeZoneReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -167,6 +169,19 @@ class Chronowear : CanvasWatchFaceService() {
 
         override fun onAmbientModeChanged(inAmbientMode: Boolean) {
             super.onAmbientModeChanged(inAmbientMode)
+            if (inAmbientMode && touchTimeDiff < 0 && touchTimeDiff > 500) {
+                println("ambient mode on: "+System.currentTimeMillis())
+                println("touchTimeDiff: " + touchTimeDiff)
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    println("something should happen")
+                    vibrator.vibrate(VibrationEffect.createOneShot(1000, 255))
+                } else {
+                    println("or did this happen?")
+
+                    vibrator.vibrate(100)
+                }
+            }
             ambient = inAmbientMode
 
             updateWatchHandStyle()
@@ -231,11 +246,37 @@ class Chronowear : CanvasWatchFaceService() {
         override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
             when (tapType) {
                 WatchFaceService.TAP_TYPE_TOUCH -> {
+//                    NotificationManager.
+//                    val mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+//                    mNotificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+//                    startActivity(new Intent(android.settings.NOTIFICATION_POLICY_ACCESS_SETTINGS), 0);
+
+
+
+
+                    println("touch")
+                    println("x: "+x)
+                    println("y: "+y)
+                    println("eventTime: "+eventTime)
+
+                    touchTimeDiff = -eventTime
                 }
                 WatchFaceService.TAP_TYPE_TOUCH_CANCEL -> {
+                    println("touch cancel")
+                    println("x: "+x)
+                    println("y: "+y)
+                    println("eventTime: "+eventTime)
+//                    val n = 1000
+                    if ((Math.log10(eventTime.toDouble()) + 1).toInt() > 6) {
+                        touchTimeDiff += eventTime
+//                        println("touchTimeDiff: " + touchTimeDiff)
+                    }
                 }
                 WatchFaceService.TAP_TYPE_TAP -> {
-
+                    println("tap")
+                    println("x: "+x)
+                    println("y: "+y)
+                    println("eventTime: "+eventTime)
                 }
             }
             invalidate()
