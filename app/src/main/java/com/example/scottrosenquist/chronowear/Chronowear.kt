@@ -15,7 +15,6 @@ import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
 import android.view.SurfaceHolder
-import android.widget.Toast
 
 import java.lang.ref.WeakReference
 import java.util.Calendar
@@ -81,6 +80,11 @@ class Chronowear : CanvasWatchFaceService() {
 
         private lateinit var backgroundPaint: Paint
 
+        private var useChronowearNotificationIndicator: Boolean = true
+        private var notificationIndicatorSize: Float = 0f
+        private var notificationIndicatorY: Float = 0f
+        private lateinit var notificationIndicatorPaint: Paint
+
         private var ambient: Boolean = false
         private var lowBitAmbient: Boolean = false
         private var burnInProtection: Boolean = false
@@ -100,17 +104,26 @@ class Chronowear : CanvasWatchFaceService() {
 
             setWatchFaceStyle(WatchFaceStyle.Builder(this@Chronowear)
                     .setAcceptsTapEvents(true)
+                    .setHideNotificationIndicator(useChronowearNotificationIndicator)
                     .build())
 
             calendar = Calendar.getInstance()
 
             initializeBackground()
+            initalizeNotificationIndicator()
             initializeWatchFace()
         }
 
         private fun initializeBackground() {
             backgroundPaint = Paint().apply {
                 color = Color.BLACK
+            }
+        }
+
+        private fun initalizeNotificationIndicator() {
+            notificationIndicatorPaint = Paint().apply {
+                color = Color.parseColor("#f44336")
+                isAntiAlias = true
             }
         }
 
@@ -188,6 +201,7 @@ class Chronowear : CanvasWatchFaceService() {
                     minutePaint.isAntiAlias = false
                     secondPaint.isAntiAlias = false
                     tickAndCirclePaint.isAntiAlias = false
+                    notificationIndicatorPaint.isAntiAlias = false
                 }
             } else {
                 hourPaint.color = watchHandColor
@@ -200,6 +214,7 @@ class Chronowear : CanvasWatchFaceService() {
                     minutePaint.isAntiAlias = true
                     secondPaint.isAntiAlias = true
                     tickAndCirclePaint.isAntiAlias = true
+                    notificationIndicatorPaint.isAntiAlias = true
                 }
             }
         }
@@ -226,6 +241,11 @@ class Chronowear : CanvasWatchFaceService() {
             secondHandLength = (centerX * 0.875).toFloat()
             minuteHandLength = (centerX * 0.75).toFloat()
             hourHandLength = (centerX * 0.5).toFloat()
+
+            if (useChronowearNotificationIndicator) {
+                notificationIndicatorSize = centerX * 0.035f
+                notificationIndicatorY = centerY * (2f - 0.065f)
+            }
         }
 
         override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
@@ -247,10 +267,17 @@ class Chronowear : CanvasWatchFaceService() {
 
             drawBackground(canvas)
             drawWatchFace(canvas)
+            if (useChronowearNotificationIndicator) drawNotificationIndicator(canvas)
         }
 
         private fun drawBackground(canvas: Canvas) {
             canvas.drawColor(Color.BLACK)
+        }
+
+        private fun drawNotificationIndicator(canvas: Canvas) {
+            if (unreadCount > 0) {
+                canvas.drawCircle(centerX, notificationIndicatorY, notificationIndicatorSize, notificationIndicatorPaint)
+            }
         }
 
         private fun drawWatchFace(canvas: Canvas) {
@@ -326,6 +353,11 @@ class Chronowear : CanvasWatchFaceService() {
 
             /* Check and trigger whether or not timer should be running (only in active mode). */
             updateTimer()
+        }
+
+        override fun onNotificationCountChanged(count: Int) {
+            super.onNotificationCountChanged(count)
+            invalidate()
         }
 
         private fun registerReceiver() {
