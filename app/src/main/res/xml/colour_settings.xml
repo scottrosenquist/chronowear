@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="colour"
+    android:title="Colour">
+    <!--<Preference android:key="#" android:title=""/>-->
+    <Preference android:key="#F44336" android:title="Red"/>
+    <Preference android:key="#E91E63" android:title="Pink"/>
+    <Preference android:key="#9C27B0" android:title="Purple"/>
+    <Preference android:key="#673AB7" android:title="Deep Purple"/>
+    <Preference android:key="#3F51B5" android:title="Indigo"/>
+    <Preference android:key="#2196F3" android:title="Blue"/>
+    <Preference android:key="#03A9F4" android:title="Light Blue"/>
+    <Preference android:key="#00BCD4" android:title="Cyan"/>
+    <Preference android:key="#009688" android:title="Teal"/>
+    <Preference android:key="#4CAF50" android:title="Green"/>
+    <Preference android:key="#8BC34A" android:title="Light Green"/>
+    <Preference android:key="#CDDC39" android:title="Lime"/>
+    <Preference android:key="#FFEB3B" android:title="Yellow"/>
+    <Preference android:key="#FFC107" android:title="Amber"/>
+    <Preference android:key="#FF9800" android:title="Orange"/>
+    <Preference android:key="#FF5722" android:title="Deep Orange"/>
+    <Preference android:key="#795548" android:title="Brown"/>
+    <Preference android:key="#9E9E9E" android:title="Gray"/>
+    <Preference android:key="#607D8B" android:title="Blue Gray"/>
+    <Preference android:key="#000000" android:title="Black"/>
+    <Preference android:key="#FFFFFF" android:title="White"/>
+</PreferenceScreen>

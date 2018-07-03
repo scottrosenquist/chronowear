@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="settings"
+    android:title="Settings">
+    <PreferenceScreen
+        android:icon="@drawable/ic_add_white_24dp"
+        android:key="complications"
+        android:title="Complications">
+        <Preference
+            android:icon="@drawable/ic_complication_left"
+            android:key="left_complication_preference"
+            android:title="Left" />
+        <Preference
+            android:icon="@drawable/ic_complication_top"
+            android:key="top_complication_preference"
+            android:title="Top" />
+        <Preference
+            android:icon="@drawable/ic_complication_right"
+            android:key="right_complication_preference"
+            android:title="Right" />
+        <Preference
+            android:icon="@drawable/ic_complication_bottom"
+            android:key="bottom_complication_preference"
+            android:title="Bottom" />
+    </PreferenceScreen>
+    <Preference
+        android:key="@string/accent_colour_preference"
+        android:title="Accent Colour">
+        <extra android:name="type" android:value="colour"/>
+    </Preference>
+    <Preference
+        android:key="@string/background_colour_preference"
+        android:title="Background Colour">
+        <extra android:name="type" android:value="colour"/>
+    </Preference>
+
+</PreferenceScreen>

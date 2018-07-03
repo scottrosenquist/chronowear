@@ -1,9 +1,7 @@
 package com.example.scottrosenquist.chronowear
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.annotation.SuppressLint
+import android.content.*
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -15,18 +13,56 @@ import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
 import android.view.SurfaceHolder
-import android.widget.Toast
 
 import java.lang.ref.WeakReference
 import java.util.Calendar
 import java.util.TimeZone
+import android.support.wearable.complications.ComplicationData
+import android.support.wearable.complications.ComplicationHelperActivity
+import android.support.wearable.complications.rendering.ComplicationDrawable
+import android.util.SparseArray
+
+val preferences: Preferences by lazy {
+    Chronowear.nonNullPreferences!!
+}
+
+const val LEFT_COMPLICATION_ID = 0
+const val TOP_COMPLICATION_ID = 1
+const val RIGHT_COMPLICATION_ID = 2
+const val BOTTOM_COMPLICATION_ID = 3
+
+val COMPLICATION_IDS = intArrayOf(LEFT_COMPLICATION_ID, TOP_COMPLICATION_ID, RIGHT_COMPLICATION_ID, BOTTOM_COMPLICATION_ID)
+
+val COMPLICATION_SUPPORTED_TYPES = arrayOf(
+        intArrayOf(
+                ComplicationData.TYPE_RANGED_VALUE,
+                ComplicationData.TYPE_ICON,
+                ComplicationData.TYPE_SHORT_TEXT,
+                ComplicationData.TYPE_SMALL_IMAGE
+        ),
+        intArrayOf(
+                ComplicationData.TYPE_RANGED_VALUE,
+                ComplicationData.TYPE_ICON,
+                ComplicationData.TYPE_SHORT_TEXT,
+                ComplicationData.TYPE_SMALL_IMAGE
+        ),
+        intArrayOf(
+                ComplicationData.TYPE_RANGED_VALUE,
+                ComplicationData.TYPE_ICON,
+                ComplicationData.TYPE_SHORT_TEXT,
+                ComplicationData.TYPE_SMALL_IMAGE
+        ),
+        intArrayOf(
+                ComplicationData.TYPE_RANGED_VALUE,
+                ComplicationData.TYPE_ICON,
+                ComplicationData.TYPE_SHORT_TEXT,
+                ComplicationData.TYPE_SMALL_IMAGE
+        )
+)
 
 private const val INTERACTIVE_UPDATE_RATE_MS = 1000
 
-/**
- * Handler message id for updating the time periodically in interactive mode.
- */
-private const val MSG_UPDATE_TIME = 0
+private const val MSG_UPDATE_TIME = 0 // Handler message id for updating the time periodically in interactive mode
 
 private const val HOUR_STROKE_WIDTH = 5f
 private const val MINUTE_STROKE_WIDTH = 3f
@@ -41,7 +77,13 @@ private const val CENTER_GAP_AND_CIRCLE_RADIUS = 4f
  */
 class Chronowear : CanvasWatchFaceService() {
 
+    internal companion object {
+        @SuppressLint("StaticFieldLeak")
+        var nonNullPreferences: Preferences? = null
+    }
+
     override fun onCreateEngine(): Engine {
+        nonNullPreferences = Preferences(applicationContext)
         return Engine()
     }
 
@@ -85,6 +127,16 @@ class Chronowear : CanvasWatchFaceService() {
         private var lowBitAmbient: Boolean = false
         private var burnInProtection: Boolean = false
 
+        /* Maps active complication ids to the data for that complication. Note: Data will only be
+         * present if the user has chosen a provider via the settings activity for the watch face.
+         */
+        private var activeComplicationDataSparseArray = SparseArray<ComplicationData>(COMPLICATION_IDS.size)
+
+        /* Maps complication ids to corresponding ComplicationDrawable that renders the
+         * the complication data on the watch face.
+         */
+        private var complicationDrawableSparseArray = SparseArray<ComplicationDrawable>(COMPLICATION_IDS.size)
+
         /* Handler to update the time once a second in interactive mode. */
         private val updateTimeHandler = EngineHandler(this)
 
@@ -104,19 +156,29 @@ class Chronowear : CanvasWatchFaceService() {
 
             calendar = Calendar.getInstance()
 
-            initializeBackground()
+            initializeComplications()
             initializeWatchFace()
+        }
+
+        fun initializeWatchFace() {
+            initializeBackground()
+            initializePaints()
         }
 
         private fun initializeBackground() {
             backgroundPaint = Paint().apply {
-                color = Color.BLACK
+                color = preferences.background.colour
             }
         }
 
-        private fun initializeWatchFace() {
+        private fun initializeComplications() {
+            COMPLICATION_IDS.forEach { complicationDrawableSparseArray.put(it, ComplicationDrawable(this@Chronowear)) }
+            setActiveComplications(*COMPLICATION_IDS)
+        }
+
+        private fun initializePaints() {
             watchHandColor = Color.WHITE
-            watchHandHighlightColor = Color.RED
+            watchHandHighlightColor = preferences.accent.colour
 
             hourPaint = Paint().apply {
                 color = watchHandColor
@@ -158,6 +220,23 @@ class Chronowear : CanvasWatchFaceService() {
                     WatchFaceService.PROPERTY_LOW_BIT_AMBIENT, false)
             burnInProtection = properties.getBoolean(
                     WatchFaceService.PROPERTY_BURN_IN_PROTECTION, false)
+
+            COMPLICATION_IDS.forEach {
+                complicationDrawableSparseArray[it].run {
+                    setLowBitAmbient(lowBitAmbient)
+                    setBurnInProtection(burnInProtection)
+                }
+            }
+        }
+
+        override fun onComplicationDataUpdate(complicationId: Int, complicationData: ComplicationData?) {
+            super.onComplicationDataUpdate(complicationId, complicationData)
+
+            activeComplicationDataSparseArray.put(complicationId, complicationData)
+
+            complicationDrawableSparseArray[complicationId].setComplicationData(complicationData)
+
+            invalidate()
         }
 
         override fun onTimeTick() {
@@ -170,6 +249,8 @@ class Chronowear : CanvasWatchFaceService() {
             ambient = inAmbientMode
 
             updateWatchHandStyle()
+
+            COMPLICATION_IDS.forEach { complicationDrawableSparseArray[it].setInAmbientMode(ambient) }
 
             // Check and trigger whether or not timer should be running (only
             // in active mode).
@@ -226,16 +307,50 @@ class Chronowear : CanvasWatchFaceService() {
             secondHandLength = (centerX * 0.875).toFloat()
             minuteHandLength = (centerX * 0.75).toFloat()
             hourHandLength = (centerX * 0.5).toFloat()
+
+            val center = width / 2
+            val left = width / 4
+            val top = width / 4
+            val right = width * 3 / 4
+            val bottom = width * 3 / 4
+            val halfAComplication = width / 8
+
+            fun complicationRect(horizontal: Int, vertical: Int) = Rect(
+                    horizontal - halfAComplication,
+                    vertical - halfAComplication,
+                    horizontal + halfAComplication,
+                    vertical + halfAComplication
+            )
+
+            complicationDrawableSparseArray[LEFT_COMPLICATION_ID].bounds = complicationRect(left, center)
+            complicationDrawableSparseArray[TOP_COMPLICATION_ID].bounds = complicationRect(center, top)
+            complicationDrawableSparseArray[RIGHT_COMPLICATION_ID].bounds = complicationRect(right, center)
+            complicationDrawableSparseArray[BOTTOM_COMPLICATION_ID].bounds = complicationRect(center, bottom)
         }
 
         override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
             when (tapType) {
                 WatchFaceService.TAP_TYPE_TOUCH -> {
+                    println("TAP_TYPE_TOUCH")
                 }
                 WatchFaceService.TAP_TYPE_TOUCH_CANCEL -> {
+                    println("TAP_TYPE_TOUCH_CANCEL")
                 }
                 WatchFaceService.TAP_TYPE_TAP -> {
-
+                    println("TAP_TYPE_TAP")
+                    COMPLICATION_IDS.forEach {
+                        if (complicationDrawableSparseArray[it].bounds.contains(x, y)) {
+                            if (activeComplicationDataSparseArray[it] == null) {
+                                startActivity(ComplicationHelperActivity.createProviderChooserHelperIntent(this@Chronowear, ComponentName(this@Chronowear, Chronowear::class.java), it, *COMPLICATION_SUPPORTED_TYPES[it]))
+                            } else {
+                                if (activeComplicationDataSparseArray[it].type == ComplicationData.TYPE_NO_PERMISSION) {
+                                    startActivity(ComplicationHelperActivity.createPermissionRequestHelperIntent(this@Chronowear, ComponentName(this@Chronowear, Chronowear::class.java)))
+                                } else {
+                                    activeComplicationDataSparseArray[it].tapAction?.send()
+                                }
+                            }
+                        }
+                    }
                 }
             }
             invalidate()
@@ -246,11 +361,16 @@ class Chronowear : CanvasWatchFaceService() {
             calendar.timeInMillis = now
 
             drawBackground(canvas)
+            drawComplications(canvas, now)
             drawWatchFace(canvas)
         }
 
         private fun drawBackground(canvas: Canvas) {
-            canvas.drawColor(Color.BLACK)
+            canvas.drawColor(if (ambient) Color.BLACK else backgroundPaint.color)
+        }
+
+        private fun drawComplications(canvas: Canvas, now: Long) {
+            COMPLICATION_IDS.forEach { complicationDrawableSparseArray[it].draw(canvas, now) }
         }
 
         private fun drawWatchFace(canvas: Canvas) {
@@ -319,6 +439,7 @@ class Chronowear : CanvasWatchFaceService() {
                 registerReceiver()
                 /* Update time zone in case it changed while we weren't visible. */
                 calendar.timeZone = TimeZone.getDefault()
+                initializeWatchFace()
                 invalidate()
             } else {
                 unregisterReceiver()
@@ -376,5 +497,3 @@ class Chronowear : CanvasWatchFaceService() {
         }
     }
 }
-
-
