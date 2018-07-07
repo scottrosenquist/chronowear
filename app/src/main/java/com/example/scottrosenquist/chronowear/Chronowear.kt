@@ -86,7 +86,9 @@ class Chronowear : CanvasWatchFaceService() {
 
         private lateinit var backgroundPaint: Paint
 
-        private var statusIconSize: Int = 1
+        private var useChronowearStatusBar: Boolean = true
+        private var statusIconSize: Int = 0
+        private var statusIconY: Float = 0f
         private lateinit var muteIcon: Drawable
         private lateinit var muteAmbientIcon: Drawable
         private lateinit var chargingIconFull: Drawable
@@ -148,14 +150,19 @@ class Chronowear : CanvasWatchFaceService() {
         override fun onCreate(holder: SurfaceHolder) {
             super.onCreate(holder)
 
-            setWatchFaceStyle(WatchFaceStyle.Builder(this@Chronowear)
-                    .setAcceptsTapEvents(true)
-                    .build())
+            buildWatchFaceStyle()
 
             calendar = Calendar.getInstance()
 
             initializeBackground()
             initializeWatchFace()
+        }
+
+        fun buildWatchFaceStyle() {
+            setWatchFaceStyle(WatchFaceStyle.Builder(this@Chronowear)
+                    .setAcceptsTapEvents(true)
+                    .setHideStatusBar(useChronowearStatusBar)
+                    .build())
         }
 
         private fun initializeBackground() {
@@ -292,8 +299,12 @@ class Chronowear : CanvasWatchFaceService() {
             minuteHandLength = (centerX * 0.75).toFloat()
             hourHandLength = (centerX * 0.5).toFloat()
 
-            statusIconSize = (centerX * 0.1f).roundToInt()
-            initializeStatusIcons()
+            if (useChronowearStatusBar) {
+                statusIconSize = (centerX * 0.11f).roundToInt()
+                statusIconY = centerY * 0.155f
+
+                initializeStatusIcons()
+            }
         }
 
         override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
@@ -303,7 +314,6 @@ class Chronowear : CanvasWatchFaceService() {
                 WatchFaceService.TAP_TYPE_TOUCH_CANCEL -> {
                 }
                 WatchFaceService.TAP_TYPE_TAP -> {
-
                 }
             }
             invalidate()
@@ -314,7 +324,7 @@ class Chronowear : CanvasWatchFaceService() {
             calendar.timeInMillis = now
 
             drawBackground(canvas)
-            drawStatusIcons(canvas)
+            if (useChronowearStatusBar) drawStatusIcons(canvas)
             drawWatchFace(canvas)
         }
 
@@ -332,11 +342,12 @@ class Chronowear : CanvasWatchFaceService() {
             }
 
             fun MutableList<Drawable>.drawOnCanvas(canvas: Canvas, x: Float, y: Float, color: Int) {
-                var adjustedX = x - statusIconSize / 2 * (this.size - 1)
+                val statusIconSpacing = statusIconSize + 5f;
+                var adjustedX = x - statusIconSpacing / 2f * (this.size - 1f)
                 val iterator = this.listIterator()
                 while(iterator.hasNext()) {
                     canvas.drawStatusIconDrawable(iterator.next(), adjustedX, y, color)
-                    adjustedX += statusIconSize
+                    adjustedX += statusIconSpacing
                 }
             }
 
@@ -358,7 +369,7 @@ class Chronowear : CanvasWatchFaceService() {
             if (muteMode) statusIconsToDraw.add(if (ambient) muteAmbientIcon else muteIcon)
             if (isCharging) statusIconsToDraw.add(determineChargingIcon())
             if (!isConnected) statusIconsToDraw.add(noConnectionIcon)
-            statusIconsToDraw.drawOnCanvas(canvas, centerX, centerY / 4f, Color.WHITE)
+            statusIconsToDraw.drawOnCanvas(canvas, centerX, statusIconY, Color.WHITE)
         }
 
         private fun drawWatchFace(canvas: Canvas) {
