@@ -207,7 +207,8 @@ class Chronowear : CanvasWatchFaceService() {
 
             calendar = Calendar.getInstance()
 
-            initializeWatchFace()
+            initializeComplications()
+            updatePaints()
         }
 
         fun buildWatchFaceStyle() {
@@ -215,18 +216,6 @@ class Chronowear : CanvasWatchFaceService() {
                     .setAcceptsTapEvents(true)
                     .setHideStatusBar(useChronowearStatusBar)
                     .build())
-        }
-
-        fun initializeWatchFace() {
-            initializeBackground()
-            initializeComplications()
-            initializePaints()
-        }
-
-        private fun initializeBackground() {
-            backgroundPaint = Paint().apply {
-                color = preferences.background.colour
-            }
         }
 
         private fun initializeComplications() {
@@ -256,9 +245,13 @@ class Chronowear : CanvasWatchFaceService() {
             noConnectionIcon = getAndBoundDrawable(R.drawable.ic_stat_notify_no_connection)
         }
 
-        private fun initializePaints() {
+        private fun updatePaints() {
             watchHandColor = Color.WHITE
             watchHandHighlightColor = preferences.accent.colour
+
+            backgroundPaint = Paint().apply {
+                color = preferences.background.colour
+            }
 
             hourPaint = Paint().apply {
                 color = watchHandColor
@@ -564,7 +557,7 @@ class Chronowear : CanvasWatchFaceService() {
                 updateTimeZone()
                 updateBatteryInfo(this@Chronowear.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)))
                 updateNetworkStatus()
-                initializeWatchFace()
+                updatePaints()
                 invalidate()
             } else {
                 unregisterTimeZoneReceiver()
