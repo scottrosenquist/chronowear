@@ -143,6 +143,11 @@ class Chronowear : CanvasWatchFaceService() {
         private lateinit var chargingIcon20: Drawable
         private lateinit var noConnectionIcon: Drawable
 
+        private var useChronowearNotificationIndicator: Boolean = true
+        private var notificationIndicatorSize: Float = 0f
+        private var notificationIndicatorY: Float = 0f
+        private lateinit var notificationIndicatorPaint: Paint
+
         private var ambient: Boolean = false
         private var lowBitAmbient: Boolean = false
         private var burnInProtection: Boolean = false
@@ -215,6 +220,7 @@ class Chronowear : CanvasWatchFaceService() {
             setWatchFaceStyle(WatchFaceStyle.Builder(this@Chronowear)
                     .setAcceptsTapEvents(true)
                     .setHideStatusBar(useChronowearStatusBar)
+                    .setHideNotificationIndicator(useChronowearNotificationIndicator)
                     .build())
         }
 
@@ -251,6 +257,11 @@ class Chronowear : CanvasWatchFaceService() {
 
             backgroundPaint = Paint().apply {
                 color = preferences.background.colour
+            }
+
+            notificationIndicatorPaint = Paint().apply {
+                color = Color.parseColor("#f44336")
+                isAntiAlias = true
             }
 
             hourPaint = Paint().apply {
@@ -342,6 +353,7 @@ class Chronowear : CanvasWatchFaceService() {
                     minutePaint.isAntiAlias = false
                     secondPaint.isAntiAlias = false
                     tickAndCirclePaint.isAntiAlias = false
+                    notificationIndicatorPaint.isAntiAlias = false
                 }
             } else {
                 hourPaint.color = watchHandColor
@@ -354,6 +366,7 @@ class Chronowear : CanvasWatchFaceService() {
                     minutePaint.isAntiAlias = true
                     secondPaint.isAntiAlias = true
                     tickAndCirclePaint.isAntiAlias = true
+                    notificationIndicatorPaint.isAntiAlias = true
                 }
             }
         }
@@ -399,6 +412,11 @@ class Chronowear : CanvasWatchFaceService() {
 
                 initializeStatusIcons()
             }
+
+            if (useChronowearNotificationIndicator) {
+                notificationIndicatorSize = centerX * 0.035f
+                notificationIndicatorY = centerY * (2f - 0.065f)
+            }
         }
 
         override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
@@ -437,6 +455,7 @@ class Chronowear : CanvasWatchFaceService() {
             drawComplications(canvas, now)
             if (useChronowearStatusBar) drawStatusIcons(canvas)
             drawWatchFace(canvas)
+            if (useChronowearNotificationIndicator) drawNotificationIndicator(canvas)
         }
 
         private fun drawBackground(canvas: Canvas) {
@@ -485,6 +504,12 @@ class Chronowear : CanvasWatchFaceService() {
             if (isCharging) statusIconsToDraw.add(determineChargingIcon())
             if (!isConnected) statusIconsToDraw.add(noConnectionIcon)
             statusIconsToDraw.drawOnCanvas(canvas, centerX, statusIconY, Color.WHITE)
+        }
+
+        private fun drawNotificationIndicator(canvas: Canvas) {
+            if (unreadCount > 0) {
+                canvas.drawCircle(centerX, notificationIndicatorY, notificationIndicatorSize, notificationIndicatorPaint)
+            }
         }
 
         private fun drawWatchFace(canvas: Canvas) {
@@ -567,6 +592,11 @@ class Chronowear : CanvasWatchFaceService() {
 
             /* Check and trigger whether or not timer should be running (only in active mode). */
             updateTimer()
+        }
+
+        override fun onNotificationCountChanged(count: Int) {
+            super.onNotificationCountChanged(count)
+            invalidate()
         }
 
         private fun registerTimeZoneReceiver() {
