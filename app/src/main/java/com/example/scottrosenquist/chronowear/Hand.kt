@@ -1,6 +1,7 @@
 package com.example.scottrosenquist.chronowear
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import kotlin.reflect.KProperty
 
@@ -9,23 +10,34 @@ class Hand(val type: Type) {
     enum class Type { HOUR, MINUTE, SECOND }
 
     val handPaint = Paint()
+    val handBorderPaint = Paint().apply {
+        color = Color.BLACK
+    }
 
     val circlePaint = Paint().apply {
         style = when (type) {
             Type.HOUR, Type.MINUTE -> Paint.Style.STROKE
-            Type.SECOND -> Paint.Style.FILL
+            Type.SECOND -> Paint.Style.FILL_AND_STROKE
         }
+    }
+    val circleBorderPaint = Paint().apply {
+        color = Color.BLACK
+        style = Paint.Style.STROKE
     }
 
     val length by Ratios(0.5f, 0.77f, 0.88f)
     val width by Ratios(0.05f, 0.035f, 0.02f)
-    val circleRadius by Ratios(0.04f, 0.04f, 0.03f)
+    val circleRadius by Ratios(0.08f, 0.055f, 0.03f)
+    val circleWidth by Ratios(0.025f, 0.025f, 0.025f)
+    val border by Ratios(0.01f, 0.01f, 0.01f)
 
     var watchFaceRadius = 0f
         set(value) {
-            field = value
+            field = value * 1f
             handPaint.strokeWidth = width
-            circlePaint.strokeWidth = ratio(0.02f)
+            handBorderPaint.strokeWidth = width + border * 2f
+            circlePaint.strokeWidth = circleWidth
+            circleBorderPaint.strokeWidth = border
         }
 
     var colour = 0
@@ -37,19 +49,34 @@ class Hand(val type: Type) {
     var antiAlias = true
         set(value) {
             handPaint.isAntiAlias = value
+            handBorderPaint.isAntiAlias = value
             circlePaint.isAntiAlias = value
+            circleBorderPaint.isAntiAlias = value
         }
 
     fun draw(canvas: Canvas, rotation: Float) {
-        val centerX = watchFaceRadius
-        val centerY = watchFaceRadius
+        val centerX = watchFaceRadius / 1f
+        val centerY = watchFaceRadius / 1f
+
+        canvas.drawCircle(
+                centerX,
+                centerY,
+                circleRadius + border / 2f,
+                circleBorderPaint)
 
         canvas.save()
 
         canvas.rotate(rotation, centerX, centerY)
         canvas.drawLine(
                 centerX,
-                centerY - circleRadius,
+                centerY - circleRadius + circleWidth,
+                centerX,
+                centerY - length - border,
+                handBorderPaint)
+
+        canvas.drawLine(
+                centerX,
+                centerY - circleRadius + circleWidth,
                 centerX,
                 centerY - length,
                 handPaint)
@@ -59,7 +86,7 @@ class Hand(val type: Type) {
         canvas.drawCircle(
                 centerX,
                 centerY,
-                circleRadius,
+                circleRadius - circleWidth / 2f,
                 circlePaint)
     }
 
