@@ -23,6 +23,10 @@
             android:icon="@drawable/ic_complication_bottom"
             android:key="bottom_complication_preference"
             android:title="Bottom" />
+        <Preference
+            android:icon="@drawable/ic_error"
+            android:key="aperture_complication_preference"
+            android:title="Aperture" />
     </PreferenceScreen>
     <Preference
         android:key="@string/accent_colour_preference"

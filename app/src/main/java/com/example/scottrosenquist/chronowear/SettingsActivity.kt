@@ -169,6 +169,7 @@ class SettingsActivity : PreferenceActivity() {
             TOP_COMPLICATION_ID -> "top_complication_preference"
             RIGHT_COMPLICATION_ID -> "right_complication_preference"
             BOTTOM_COMPLICATION_ID -> "bottom_complication_preference"
+            APERTURE_COMPLICATION_ID -> "aperture_complication_preference"
             else -> null
         }
 
@@ -177,6 +178,7 @@ class SettingsActivity : PreferenceActivity() {
             "top_complication_preference" -> TOP_COMPLICATION_ID
             "right_complication_preference" -> RIGHT_COMPLICATION_ID
             "bottom_complication_preference" -> BOTTOM_COMPLICATION_ID
+            "aperture_complication_preference" -> APERTURE_COMPLICATION_ID
             else -> null
         }
     }
