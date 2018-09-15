@@ -65,11 +65,7 @@ private const val INTERACTIVE_UPDATE_RATE_MS = 1000
 
 private const val MSG_UPDATE_TIME = 0 // Handler message id for updating the time periodically in interactive mode
 
-private const val HOUR_STROKE_WIDTH = 5f
-private const val MINUTE_STROKE_WIDTH = 3f
-private const val SECOND_TICK_STROKE_WIDTH = 2f
-
-private const val CENTER_GAP_AND_CIRCLE_RADIUS = 4f
+private const val TICK_STROKE_WIDTH = 2f
 
 /**
  * Important Note: Because watch face apps do not have a default Activity in
@@ -105,6 +101,8 @@ class Chronowear : CanvasWatchFaceService() {
 
         private lateinit var calendar: Calendar
 
+        private var hands = Hands()
+
         private var registeredTimeZoneReceiver = false
         private var registeredBatteryReceiver = false
         private var registeredNetworkStatusReceiver = false
@@ -115,17 +113,10 @@ class Chronowear : CanvasWatchFaceService() {
         private var centerX: Float = 0F
         private var centerY: Float = 0F
 
-        private var secondHandLength: Float = 0F
-        private var minuteHandLength: Float = 0F
-        private var hourHandLength: Float = 0F
-
         private var watchHandColor: Int = 0
         private var watchHandHighlightColor: Int = 0
 
-        private lateinit var hourPaint: Paint
-        private lateinit var minutePaint: Paint
-        private lateinit var secondPaint: Paint
-        private lateinit var tickAndCirclePaint: Paint
+        private lateinit var tickPaint: Paint
 
         private lateinit var backgroundPaint: Paint
 
@@ -264,30 +255,15 @@ class Chronowear : CanvasWatchFaceService() {
                 isAntiAlias = true
             }
 
-            hourPaint = Paint().apply {
-                color = watchHandColor
-                strokeWidth = HOUR_STROKE_WIDTH
-                isAntiAlias = true
-                strokeCap = Paint.Cap.ROUND
+            hands.apply {
+                primaryColour = watchHandColor
+                accentColour = watchHandHighlightColor
+                antiAlias = true
             }
 
-            minutePaint = Paint().apply {
+            tickPaint = Paint().apply {
                 color = watchHandColor
-                strokeWidth = MINUTE_STROKE_WIDTH
-                isAntiAlias = true
-                strokeCap = Paint.Cap.ROUND
-            }
-
-            secondPaint = Paint().apply {
-                color = watchHandHighlightColor
-                strokeWidth = SECOND_TICK_STROKE_WIDTH
-                isAntiAlias = true
-                strokeCap = Paint.Cap.ROUND
-            }
-
-            tickAndCirclePaint = Paint().apply {
-                color = watchHandColor
-                strokeWidth = SECOND_TICK_STROKE_WIDTH
+                strokeWidth = TICK_STROKE_WIDTH
                 isAntiAlias = true
                 style = Paint.Style.STROKE
             }
@@ -343,29 +319,22 @@ class Chronowear : CanvasWatchFaceService() {
 
         private fun updateWatchHandStyle() {
             if (ambient) {
-                hourPaint.color = Color.WHITE
-                minutePaint.color = Color.WHITE
-                secondPaint.color = Color.WHITE
-                tickAndCirclePaint.color = Color.WHITE
+                hands.ambientColour = Color.WHITE
+                tickPaint.color = Color.WHITE
 
                 if (lowBitAmbient) {
-                    hourPaint.isAntiAlias = false
-                    minutePaint.isAntiAlias = false
-                    secondPaint.isAntiAlias = false
-                    tickAndCirclePaint.isAntiAlias = false
+                    hands.antiAlias = false
+                    tickPaint.isAntiAlias = false
                     notificationIndicatorPaint.isAntiAlias = false
                 }
             } else {
-                hourPaint.color = watchHandColor
-                minutePaint.color = watchHandColor
-                secondPaint.color = watchHandHighlightColor
-                tickAndCirclePaint.color = watchHandColor
+                hands.primaryColour = watchHandColor
+                hands.accentColour = watchHandHighlightColor
+                tickPaint.color = watchHandColor
 
                 if (lowBitAmbient) {
-                    hourPaint.isAntiAlias = true
-                    minutePaint.isAntiAlias = true
-                    secondPaint.isAntiAlias = true
-                    tickAndCirclePaint.isAntiAlias = true
+                    hands.antiAlias = true
+                    tickPaint.isAntiAlias = true
                     notificationIndicatorPaint.isAntiAlias = true
                 }
             }
@@ -383,9 +352,7 @@ class Chronowear : CanvasWatchFaceService() {
             centerX = width / 2f
             centerY = height / 2f
 
-            secondHandLength = (centerX * 0.875).toFloat()
-            minuteHandLength = (centerX * 0.75).toFloat()
-            hourHandLength = (centerX * 0.5).toFloat()
+            hands.watchFaceRadius = width / 2f
 
             val center = width / 2
             val left = width / 4
@@ -522,53 +489,22 @@ class Chronowear : CanvasWatchFaceService() {
                 val outerX = Math.sin(tickRot.toDouble()).toFloat() * outerTickRadius
                 val outerY = (-Math.cos(tickRot.toDouble())).toFloat() * outerTickRadius
                 canvas.drawLine(centerX + innerX, centerY + innerY,
-                        centerX + outerX, centerY + outerY, tickAndCirclePaint)
+                        centerX + outerX, centerY + outerY, tickPaint)
             }
 
-            val seconds =
-                    calendar.get(Calendar.SECOND) + calendar.get(Calendar.MILLISECOND) / 1000f
-            val secondsRotation = seconds * 6f
+//            calendar.setTimeInMillis(54569000); // Screen Shot Time
+//            calendar.setTimeInMillis(61200000); // Midnight (Hand Alignment)
 
-            val minutesRotation = calendar.get(Calendar.MINUTE) * 6f
+            val seconds = calendar.get(Calendar.SECOND)
+            val secondsRotation = if (!ambient) seconds * 6f else null
+
+            val minuteHandOffset = calendar.get(Calendar.SECOND) / 10f;
+            val minutesRotation = calendar.get(Calendar.MINUTE) * 6f + minuteHandOffset
 
             val hourHandOffset = calendar.get(Calendar.MINUTE) / 2f
             val hoursRotation = calendar.get(Calendar.HOUR) * 30 + hourHandOffset
 
-            canvas.save()
-
-            canvas.rotate(hoursRotation, centerX, centerY)
-            canvas.drawLine(
-                    centerX,
-                    centerY - CENTER_GAP_AND_CIRCLE_RADIUS,
-                    centerX,
-                    centerY - hourHandLength,
-                    hourPaint)
-
-            canvas.rotate(minutesRotation - hoursRotation, centerX, centerY)
-            canvas.drawLine(
-                    centerX,
-                    centerY - CENTER_GAP_AND_CIRCLE_RADIUS,
-                    centerX,
-                    centerY - minuteHandLength,
-                    minutePaint)
-
-            if (!ambient) {
-                canvas.rotate(secondsRotation - minutesRotation, centerX, centerY)
-                canvas.drawLine(
-                        centerX,
-                        centerY - CENTER_GAP_AND_CIRCLE_RADIUS,
-                        centerX,
-                        centerY - secondHandLength,
-                        secondPaint)
-
-            }
-            canvas.drawCircle(
-                    centerX,
-                    centerY,
-                    CENTER_GAP_AND_CIRCLE_RADIUS,
-                    tickAndCirclePaint)
-
-            canvas.restore()
+            hands.draw(canvas, hoursRotation, minutesRotation, secondsRotation)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
