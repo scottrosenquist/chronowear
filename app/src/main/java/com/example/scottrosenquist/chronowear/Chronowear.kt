@@ -65,8 +65,6 @@ private const val INTERACTIVE_UPDATE_RATE_MS = 1000
 
 private const val MSG_UPDATE_TIME = 0 // Handler message id for updating the time periodically in interactive mode
 
-private const val TICK_STROKE_WIDTH = 2f
-
 /**
  * Important Note: Because watch face apps do not have a default Activity in
  * their project, you will need to set your Configurations to
@@ -103,6 +101,8 @@ class Chronowear : CanvasWatchFaceService() {
 
         private var hands = Hands()
 
+        private var ticks = Ticks()
+
         private var registeredTimeZoneReceiver = false
         private var registeredBatteryReceiver = false
         private var registeredNetworkStatusReceiver = false
@@ -115,8 +115,6 @@ class Chronowear : CanvasWatchFaceService() {
 
         private var watchHandColor: Int = 0
         private var watchHandHighlightColor: Int = 0
-
-        private lateinit var tickPaint: Paint
 
         private lateinit var backgroundPaint: Paint
 
@@ -261,11 +259,9 @@ class Chronowear : CanvasWatchFaceService() {
                 antiAlias = true
             }
 
-            tickPaint = Paint().apply {
-                color = watchHandColor
-                strokeWidth = TICK_STROKE_WIDTH
-                isAntiAlias = true
-                style = Paint.Style.STROKE
+            ticks.apply {
+                colour = watchHandColor
+                antiAlias = true
             }
         }
 
@@ -320,21 +316,21 @@ class Chronowear : CanvasWatchFaceService() {
         private fun updateWatchHandStyle() {
             if (ambient) {
                 hands.ambientColour = Color.WHITE
-                tickPaint.color = Color.WHITE
+                ticks.colour = Color.WHITE
 
                 if (lowBitAmbient) {
                     hands.antiAlias = false
-                    tickPaint.isAntiAlias = false
+                    ticks.antiAlias = false
                     notificationIndicatorPaint.isAntiAlias = false
                 }
             } else {
                 hands.primaryColour = watchHandColor
                 hands.accentColour = watchHandHighlightColor
-                tickPaint.color = watchHandColor
+                ticks.colour = watchHandColor
 
                 if (lowBitAmbient) {
                     hands.antiAlias = true
-                    tickPaint.isAntiAlias = true
+                    ticks.antiAlias = true
                     notificationIndicatorPaint.isAntiAlias = true
                 }
             }
@@ -353,6 +349,7 @@ class Chronowear : CanvasWatchFaceService() {
             centerY = height / 2f
 
             hands.watchFaceRadius = width / 2f
+            ticks.watchFaceRadius = width / 2f
 
             val center = width / 2
             val left = width / 4
@@ -480,17 +477,7 @@ class Chronowear : CanvasWatchFaceService() {
         }
 
         private fun drawWatchFace(canvas: Canvas) {
-            val innerTickRadius = centerX - 10
-            val outerTickRadius = centerX
-            for (tickIndex in 0..11) {
-                val tickRot = (tickIndex.toDouble() * Math.PI * 2.0 / 12).toFloat()
-                val innerX = Math.sin(tickRot.toDouble()).toFloat() * innerTickRadius
-                val innerY = (-Math.cos(tickRot.toDouble())).toFloat() * innerTickRadius
-                val outerX = Math.sin(tickRot.toDouble()).toFloat() * outerTickRadius
-                val outerY = (-Math.cos(tickRot.toDouble())).toFloat() * outerTickRadius
-                canvas.drawLine(centerX + innerX, centerY + innerY,
-                        centerX + outerX, centerY + outerY, tickPaint)
-            }
+            ticks.draw(canvas)
 
 //            calendar.setTimeInMillis(54569000); // Screen Shot Time
 //            calendar.setTimeInMillis(61200000); // Midnight (Hand Alignment)
