@@ -19,47 +19,10 @@ import java.util.Calendar
 import java.util.TimeZone
 import kotlin.math.roundToInt
 import android.support.wearable.complications.ComplicationData
-import android.support.wearable.complications.ComplicationHelperActivity
-import android.support.wearable.complications.rendering.ComplicationDrawable
-import android.util.SparseArray
 
 val preferences: Preferences by lazy {
     Chronowear.nonNullPreferences!!
 }
-
-const val LEFT_COMPLICATION_ID = 0
-const val TOP_COMPLICATION_ID = 1
-const val RIGHT_COMPLICATION_ID = 2
-const val BOTTOM_COMPLICATION_ID = 3
-
-val COMPLICATION_IDS = intArrayOf(LEFT_COMPLICATION_ID, TOP_COMPLICATION_ID, RIGHT_COMPLICATION_ID, BOTTOM_COMPLICATION_ID)
-
-val COMPLICATION_SUPPORTED_TYPES = arrayOf(
-        intArrayOf(
-                ComplicationData.TYPE_RANGED_VALUE,
-                ComplicationData.TYPE_ICON,
-                ComplicationData.TYPE_SHORT_TEXT,
-                ComplicationData.TYPE_SMALL_IMAGE
-        ),
-        intArrayOf(
-                ComplicationData.TYPE_RANGED_VALUE,
-                ComplicationData.TYPE_ICON,
-                ComplicationData.TYPE_SHORT_TEXT,
-                ComplicationData.TYPE_SMALL_IMAGE
-        ),
-        intArrayOf(
-                ComplicationData.TYPE_RANGED_VALUE,
-                ComplicationData.TYPE_ICON,
-                ComplicationData.TYPE_SHORT_TEXT,
-                ComplicationData.TYPE_SMALL_IMAGE
-        ),
-        intArrayOf(
-                ComplicationData.TYPE_RANGED_VALUE,
-                ComplicationData.TYPE_ICON,
-                ComplicationData.TYPE_SHORT_TEXT,
-                ComplicationData.TYPE_SMALL_IMAGE
-        )
-)
 
 private const val MSG_UPDATE_TIME = 0 // Handler message id for updating the time periodically in interactive mode
 
@@ -101,6 +64,8 @@ class Chronowear : CanvasWatchFaceService() {
 
         private var ticks = Ticks()
 
+        private var complications = Complications()
+
         private var registeredTimeZoneReceiver = false
         private var registeredBatteryReceiver = false
         private var registeredNetworkStatusReceiver = false
@@ -138,16 +103,6 @@ class Chronowear : CanvasWatchFaceService() {
         private var ambient: Boolean = false
         private var lowBitAmbient: Boolean = false
         private var burnInProtection: Boolean = false
-
-        /* Maps active complication ids to the data for that complication. Note: Data will only be
-         * present if the user has chosen a provider via the settings activity for the watch face.
-         */
-        private var activeComplicationDataSparseArray = SparseArray<ComplicationData>(COMPLICATION_IDS.size)
-
-        /* Maps complication ids to corresponding ComplicationDrawable that renders the
-         * the complication data on the watch face.
-         */
-        private var complicationDrawableSparseArray = SparseArray<ComplicationDrawable>(COMPLICATION_IDS.size)
 
         /* Handler to update the time once a second in interactive mode. */
         private val updateTimeHandler = EngineHandler(this)
@@ -199,7 +154,10 @@ class Chronowear : CanvasWatchFaceService() {
 
             calendar = Calendar.getInstance()
 
-            initializeComplications()
+            complications.context = this@Chronowear
+
+            setActiveComplications(*COMPLICATION_IDS)
+
             updatePaints()
         }
 
@@ -209,11 +167,6 @@ class Chronowear : CanvasWatchFaceService() {
                     .setHideStatusBar(useChronowearStatusBar)
                     .setHideNotificationIndicator(useChronowearNotificationIndicator)
                     .build())
-        }
-
-        private fun initializeComplications() {
-            COMPLICATION_IDS.forEach { complicationDrawableSparseArray.put(it, ComplicationDrawable(this@Chronowear)) }
-            setActiveComplications(*COMPLICATION_IDS)
         }
 
         private fun initializeStatusIcons() {
@@ -275,20 +228,14 @@ class Chronowear : CanvasWatchFaceService() {
             burnInProtection = properties.getBoolean(
                     WatchFaceService.PROPERTY_BURN_IN_PROTECTION, false)
 
-            COMPLICATION_IDS.forEach {
-                complicationDrawableSparseArray[it].run {
-                    setLowBitAmbient(lowBitAmbient)
-                    setBurnInProtection(burnInProtection)
-                }
-            }
+            complications.lowBitAmbient = lowBitAmbient
+            complications.burnInProtection = burnInProtection
         }
 
-        override fun onComplicationDataUpdate(complicationId: Int, complicationData: ComplicationData?) {
+        override fun onComplicationDataUpdate(complicationId: Int, complicationData: ComplicationData) {
             super.onComplicationDataUpdate(complicationId, complicationData)
 
-            activeComplicationDataSparseArray.put(complicationId, complicationData)
-
-            complicationDrawableSparseArray[complicationId].setComplicationData(complicationData)
+            complications.updateComplicationData(complicationId, complicationData)
 
             invalidate()
         }
@@ -304,7 +251,7 @@ class Chronowear : CanvasWatchFaceService() {
 
             updateWatchHandStyle()
 
-            COMPLICATION_IDS.forEach { complicationDrawableSparseArray[it].setInAmbientMode(ambient) }
+            complications.ambient = inAmbientMode
 
             // Check and trigger whether or not timer should be running (only
             // in active mode).
@@ -348,26 +295,7 @@ class Chronowear : CanvasWatchFaceService() {
 
             hands.watchFaceRadius = width / 2f
             ticks.watchFaceRadius = width / 2f
-
-            val center = width * 0.5f
-            val distanceFromCenter = width * 0.20f
-            val left = center - distanceFromCenter
-            val top = center - distanceFromCenter
-            val right = center + distanceFromCenter
-            val bottom = center + distanceFromCenter
-            val halfAComplication = width * 0.125f
-
-            fun complicationRect(horizontal: Float, vertical: Float) = Rect(
-                    (horizontal - halfAComplication).roundToInt(),
-                    (vertical - halfAComplication).roundToInt(),
-                    (horizontal + halfAComplication).roundToInt(),
-                    (vertical + halfAComplication).roundToInt()
-            )
-
-            complicationDrawableSparseArray[LEFT_COMPLICATION_ID].bounds = complicationRect(left, center)
-            complicationDrawableSparseArray[TOP_COMPLICATION_ID].bounds = complicationRect(center, top)
-            complicationDrawableSparseArray[RIGHT_COMPLICATION_ID].bounds = complicationRect(right, center)
-            complicationDrawableSparseArray[BOTTOM_COMPLICATION_ID].bounds = complicationRect(center, bottom)
+            complications.watchFaceRadius = width / 2f
 
             if (useChronowearStatusBar) {
                 statusIconSize = (centerX * 0.11f).roundToInt()
@@ -392,19 +320,7 @@ class Chronowear : CanvasWatchFaceService() {
                 }
                 WatchFaceService.TAP_TYPE_TAP -> {
                     println("TAP_TYPE_TAP")
-                    COMPLICATION_IDS.forEach {
-                        if (complicationDrawableSparseArray[it].bounds.contains(x, y)) {
-                            if (activeComplicationDataSparseArray[it] == null) {
-                                startActivity(ComplicationHelperActivity.createProviderChooserHelperIntent(this@Chronowear, ComponentName(this@Chronowear, Chronowear::class.java), it, *COMPLICATION_SUPPORTED_TYPES[it]))
-                            } else {
-                                if (activeComplicationDataSparseArray[it].type == ComplicationData.TYPE_NO_PERMISSION) {
-                                    startActivity(ComplicationHelperActivity.createPermissionRequestHelperIntent(this@Chronowear, ComponentName(this@Chronowear, Chronowear::class.java)))
-                                } else {
-                                    activeComplicationDataSparseArray[it].tapAction?.send()
-                                }
-                            }
-                        }
-                    }
+                    complications.tap(x, y)
                 }
             }
             invalidate()
@@ -416,7 +332,7 @@ class Chronowear : CanvasWatchFaceService() {
 
             drawBackground(canvas)
             drawTicks(canvas)
-            drawComplications(canvas, now)
+            complications.draw(canvas, now)
             if (useChronowearStatusBar && !(preferences.ambientFullMute && ambient && muteMode)) drawStatusIcons(canvas)
             if (useChronowearNotificationIndicator && !(preferences.ambientFullMute && muteMode)) drawNotificationIndicator(canvas)
             drawHands(canvas)
@@ -424,10 +340,6 @@ class Chronowear : CanvasWatchFaceService() {
 
         private fun drawBackground(canvas: Canvas) {
             canvas.drawColor(if (ambient) Color.BLACK else backgroundPaint.color)
-        }
-
-        private fun drawComplications(canvas: Canvas, now: Long) {
-            COMPLICATION_IDS.forEach { complicationDrawableSparseArray[it].draw(canvas, now) }
         }
 
         private fun drawStatusIcons(canvas: Canvas) {
