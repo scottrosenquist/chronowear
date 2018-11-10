@@ -6,4 +6,5 @@
 
     <string name="accent_colour_preference">accent_colour_preference</string>
     <string name="background_colour_preference">background_colour_preference</string>
+    <string name="ambient_full_mute_preference">ambient_full_mute_preference</string>
 </resources>

@@ -417,9 +417,9 @@ class Chronowear : CanvasWatchFaceService() {
 
             drawBackground(canvas)
             drawComplications(canvas, now)
-            if (useChronowearStatusBar) drawStatusIcons(canvas)
+            if (useChronowearStatusBar && !(preferences.ambientFullMute && ambient && muteMode)) drawStatusIcons(canvas)
             drawWatchFace(canvas)
-            if (useChronowearNotificationIndicator) drawNotificationIndicator(canvas)
+            if (useChronowearNotificationIndicator && !(preferences.ambientFullMute && muteMode)) drawNotificationIndicator(canvas)
         }
 
         private fun drawBackground(canvas: Canvas) {
