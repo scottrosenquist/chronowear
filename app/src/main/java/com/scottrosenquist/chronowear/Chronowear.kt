@@ -351,18 +351,19 @@ class Chronowear : CanvasWatchFaceService() {
             hands.watchFaceRadius = width / 2f
             ticks.watchFaceRadius = width / 2f
 
-            val center = width / 2
-            val left = width / 4
-            val top = width / 4
-            val right = width * 3 / 4
-            val bottom = width * 3 / 4
-            val halfAComplication = width / 8
+            val center = width * 0.5f
+            val distanceFromCenter = width * 0.20f
+            val left = center - distanceFromCenter
+            val top = center - distanceFromCenter
+            val right = center + distanceFromCenter
+            val bottom = center + distanceFromCenter
+            val halfAComplication = width * 0.125f
 
-            fun complicationRect(horizontal: Int, vertical: Int) = Rect(
-                    horizontal - halfAComplication,
-                    vertical - halfAComplication,
-                    horizontal + halfAComplication,
-                    vertical + halfAComplication
+            fun complicationRect(horizontal: Float, vertical: Float) = Rect(
+                    (horizontal - halfAComplication).roundToInt(),
+                    (vertical - halfAComplication).roundToInt(),
+                    (horizontal + halfAComplication).roundToInt(),
+                    (vertical + halfAComplication).roundToInt()
             )
 
             complicationDrawableSparseArray[LEFT_COMPLICATION_ID].bounds = complicationRect(left, center)
