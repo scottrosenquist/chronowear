@@ -373,14 +373,14 @@ class Chronowear : CanvasWatchFaceService() {
 
             if (useChronowearStatusBar) {
                 statusIconSize = (centerX * 0.11f).roundToInt()
-                statusIconY = centerY * 0.155f
+                statusIconY = centerY * 0.275f
 
                 initializeStatusIcons()
             }
 
             if (useChronowearNotificationIndicator) {
                 notificationIndicatorSize = centerX * 0.035f
-                notificationIndicatorY = centerY * (2f - 0.065f)
+                notificationIndicatorY = centerY * (2f - 0.275f)
             }
         }
 
