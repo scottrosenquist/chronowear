@@ -416,10 +416,11 @@ class Chronowear : CanvasWatchFaceService() {
             calendar.timeInMillis = now
 
             drawBackground(canvas)
+            drawTicks(canvas)
             drawComplications(canvas, now)
             if (useChronowearStatusBar && !(preferences.ambientFullMute && ambient && muteMode)) drawStatusIcons(canvas)
-            drawWatchFace(canvas)
             if (useChronowearNotificationIndicator && !(preferences.ambientFullMute && muteMode)) drawNotificationIndicator(canvas)
+            drawHands(canvas)
         }
 
         private fun drawBackground(canvas: Canvas) {
@@ -476,9 +477,11 @@ class Chronowear : CanvasWatchFaceService() {
             }
         }
 
-        private fun drawWatchFace(canvas: Canvas) {
+        private fun drawTicks(canvas: Canvas) {
             ticks.draw(canvas)
+        }
 
+        private fun drawHands(canvas: Canvas) {
 //            calendar.setTimeInMillis(54569000); // Screen Shot Time
 //            calendar.setTimeInMillis(61200000); // Midnight (Hand Alignment)
 
