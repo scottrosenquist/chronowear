@@ -17,7 +17,7 @@ class Hand(val type: Type) {
         }
     }
 
-    val length by Ratios(0.5f, 0.77f, 0.88f)
+    val length by Ratios(0.5f, 0.8f, 0.9f)
     val width by Ratios(0.05f, 0.035f, 0.02f)
     val circleRadius by Ratios(0.04f, 0.04f, 0.03f)
 
