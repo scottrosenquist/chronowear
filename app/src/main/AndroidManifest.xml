@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.scottrosenquist.chronowear">
+    package="com.scottrosenquist.chronowear">
 
     <uses-feature android:name="android.hardware.type.watch" />
 
@@ -41,7 +41,7 @@
 
             <meta-data
                 android:name="com.google.android.wearable.watchface.wearableConfigurationAction"
-                android:value="com.example.scottrosenquist.chronowear.CONFIG_CHRONOWEAR" />
+                android:value="com.scottrosenquist.chronowear.CONFIG_CHRONOWEAR" />
         </service>
 
         <service
@@ -70,7 +70,7 @@
         <activity
             android:name=".SettingsActivity">
             <intent-filter>
-                <action android:name="com.example.scottrosenquist.chronowear.CONFIG_CHRONOWEAR" />
+                <action android:name="com.scottrosenquist.chronowear.CONFIG_CHRONOWEAR" />
                 <category android:name="com.google.android.wearable.watchface.category.WEARABLE_CONFIGURATION" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>

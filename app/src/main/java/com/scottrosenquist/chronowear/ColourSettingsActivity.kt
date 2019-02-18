@@ -1,4 +1,4 @@
-package com.example.scottrosenquist.chronowear
+package com.scottrosenquist.chronowear
 
 import android.content.Intent
 import android.graphics.Color
