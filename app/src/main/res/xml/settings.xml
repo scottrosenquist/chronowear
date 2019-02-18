@@ -35,7 +35,7 @@
         <extra android:name="type" android:value="colour"/>
     </Preference>
     <SwitchPreference
-        android:key="ambient_full_mute_preference"
+        android:key="@string/ambient_full_mute_preference"
         android:title="Ambient Full Mute" />
 
 </PreferenceScreen>
