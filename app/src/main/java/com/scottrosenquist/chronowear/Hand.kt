@@ -3,6 +3,8 @@ package com.scottrosenquist.chronowear
 import android.graphics.Canvas
 import android.graphics.Paint
 import kotlin.reflect.KProperty
+import android.animation.ValueAnimator
+import android.view.animation.LinearInterpolator
 
 class Hand(val type: Type) {
 
@@ -40,13 +42,34 @@ class Hand(val type: Type) {
             circlePaint.isAntiAlias = value
         }
 
+    var previousRotation = 0f
+
+    val animator = ValueAnimator().apply {
+        duration = 80
+        interpolator = LinearInterpolator()
+    }
+
     fun draw(canvas: Canvas, rotation: Float) {
+        draw(canvas, rotation, null)
+    }
+
+    fun draw(canvas: Canvas, rotation: Float, rotateFrom: Float?) {
         val centerX = watchFaceRadius
         val centerY = watchFaceRadius
 
         canvas.save()
 
-        canvas.rotate(rotation, centerX, centerY)
+        if (type == Type.SECOND && rotation != previousRotation && rotateFrom != null && preferences.animatedSecondHand) {
+            animator.setFloatValues(rotateFrom, rotation)
+            previousRotation = rotation
+            animator.start()
+        }
+
+        if (animator.isRunning) {
+            canvas.rotate(animator.animatedValue as Float, centerX, centerY)
+        } else {
+            canvas.rotate(rotation, centerX, centerY)
+        }
         canvas.drawLine(
                 centerX,
                 centerY - circleRadius,

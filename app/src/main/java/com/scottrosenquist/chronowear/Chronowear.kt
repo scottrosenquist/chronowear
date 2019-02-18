@@ -61,8 +61,6 @@ val COMPLICATION_SUPPORTED_TYPES = arrayOf(
         )
 )
 
-private const val INTERACTIVE_UPDATE_RATE_MS = 1000
-
 private const val MSG_UPDATE_TIME = 0 // Handler message id for updating the time periodically in interactive mode
 
 /**
@@ -487,7 +485,12 @@ class Chronowear : CanvasWatchFaceService() {
 //            calendar.setTimeInMillis(61200000); // Midnight (Hand Alignment)
 
             val seconds = calendar.get(Calendar.SECOND)
-            val secondsRotation = if (!ambient) seconds * 6f else null
+            val beatsPerSecond = 1
+            val millisecondsNormalizer = 1000 / beatsPerSecond
+            val milliseconds = calendar.get(Calendar.MILLISECOND) / millisecondsNormalizer * millisecondsNormalizer
+
+            val secondsRotation = if (!ambient) ( seconds + milliseconds / 1000f ) * 6f else null
+            val previousSecondsRotation = if (!ambient) ( seconds + ( milliseconds - millisecondsNormalizer ) / 1000f ) * 6f else null
 
             val minuteHandOffset = calendar.get(Calendar.SECOND) / 10f;
             val minutesRotation = calendar.get(Calendar.MINUTE) * 6f + minuteHandOffset
@@ -495,7 +498,7 @@ class Chronowear : CanvasWatchFaceService() {
             val hourHandOffset = calendar.get(Calendar.MINUTE) / 2f
             val hoursRotation = calendar.get(Calendar.HOUR) * 30 + hourHandOffset
 
-            hands.draw(canvas, hoursRotation, minutesRotation, secondsRotation)
+            hands.draw(canvas, hoursRotation, minutesRotation, secondsRotation, previousSecondsRotation)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
@@ -601,8 +604,10 @@ class Chronowear : CanvasWatchFaceService() {
         fun handleUpdateTimeMessage() {
             invalidate()
             if (shouldTimerBeRunning()) {
+                val framesPerSecond = 60
+                val interactiveUpdateRateMs = 1000 / framesPerSecond
                 val timeMs = System.currentTimeMillis()
-                val delayMs = INTERACTIVE_UPDATE_RATE_MS - timeMs % INTERACTIVE_UPDATE_RATE_MS
+                val delayMs = interactiveUpdateRateMs - timeMs % interactiveUpdateRateMs
                 updateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs)
             }
         }
