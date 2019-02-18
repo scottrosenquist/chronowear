@@ -1,4 +1,4 @@
-package com.example.scottrosenquist.chronowear
+package com.scottrosenquist.chronowear
 
 import android.graphics.Canvas
 

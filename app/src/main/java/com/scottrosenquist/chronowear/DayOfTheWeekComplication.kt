@@ -1,4 +1,4 @@
-package com.example.scottrosenquist.chronowear
+package com.scottrosenquist.chronowear
 
 import android.support.wearable.complications.ComplicationData
 import android.support.wearable.complications.ComplicationManager
