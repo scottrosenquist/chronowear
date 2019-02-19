@@ -1,7 +1,5 @@
 <resources>
-    <string name="app_name">Chronowear</string>
     <string name="message">Watch face tapped</string>
-    <string name="watch_face_name">Chronowear</string>
     <string name="day_of_the_week_complication_name">Day Of The Week</string>
 
     <string name="accent_colour_preference">accent_colour_preference</string>
