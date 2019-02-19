@@ -10,8 +10,8 @@ class Tick(val type: Type) {
 
     val paint = Paint()
 
-    val length by Ratios(0.1f, 0.033f)
-    val width by Ratios(0.015f, 0.01f)
+    val length by Ratios(0.15f, 0.05f)
+    val width by Ratios(0.03f, 0.0125f)
     val margin by Ratios(0.05f, 0.05f)
 
     var watchFaceRadius = 0f

@@ -61,8 +61,6 @@ val COMPLICATION_SUPPORTED_TYPES = arrayOf(
         )
 )
 
-private const val INTERACTIVE_UPDATE_RATE_MS = 1000
-
 private const val MSG_UPDATE_TIME = 0 // Handler message id for updating the time periodically in interactive mode
 
 /**
@@ -351,18 +349,19 @@ class Chronowear : CanvasWatchFaceService() {
             hands.watchFaceRadius = width / 2f
             ticks.watchFaceRadius = width / 2f
 
-            val center = width / 2
-            val left = width / 4
-            val top = width / 4
-            val right = width * 3 / 4
-            val bottom = width * 3 / 4
-            val halfAComplication = width / 8
+            val center = width * 0.5f
+            val distanceFromCenter = width * 0.20f
+            val left = center - distanceFromCenter
+            val top = center - distanceFromCenter
+            val right = center + distanceFromCenter
+            val bottom = center + distanceFromCenter
+            val halfAComplication = width * 0.125f
 
-            fun complicationRect(horizontal: Int, vertical: Int) = Rect(
-                    horizontal - halfAComplication,
-                    vertical - halfAComplication,
-                    horizontal + halfAComplication,
-                    vertical + halfAComplication
+            fun complicationRect(horizontal: Float, vertical: Float) = Rect(
+                    (horizontal - halfAComplication).roundToInt(),
+                    (vertical - halfAComplication).roundToInt(),
+                    (horizontal + halfAComplication).roundToInt(),
+                    (vertical + halfAComplication).roundToInt()
             )
 
             complicationDrawableSparseArray[LEFT_COMPLICATION_ID].bounds = complicationRect(left, center)
@@ -372,14 +371,14 @@ class Chronowear : CanvasWatchFaceService() {
 
             if (useChronowearStatusBar) {
                 statusIconSize = (centerX * 0.11f).roundToInt()
-                statusIconY = centerY * 0.155f
+                statusIconY = centerY * 0.275f
 
                 initializeStatusIcons()
             }
 
             if (useChronowearNotificationIndicator) {
                 notificationIndicatorSize = centerX * 0.035f
-                notificationIndicatorY = centerY * (2f - 0.065f)
+                notificationIndicatorY = centerY * (2f - 0.275f)
             }
         }
 
@@ -486,7 +485,12 @@ class Chronowear : CanvasWatchFaceService() {
 //            calendar.setTimeInMillis(61200000); // Midnight (Hand Alignment)
 
             val seconds = calendar.get(Calendar.SECOND)
-            val secondsRotation = if (!ambient) seconds * 6f else null
+            val beatsPerSecond = 1
+            val millisecondsNormalizer = 1000 / beatsPerSecond
+            val milliseconds = calendar.get(Calendar.MILLISECOND) / millisecondsNormalizer * millisecondsNormalizer
+
+            val secondsRotation = if (!ambient) ( seconds + milliseconds / 1000f ) * 6f else null
+            val previousSecondsRotation = if (!ambient) ( seconds + ( milliseconds - millisecondsNormalizer ) / 1000f ) * 6f else null
 
             val minuteHandOffset = calendar.get(Calendar.SECOND) / 10f;
             val minutesRotation = calendar.get(Calendar.MINUTE) * 6f + minuteHandOffset
@@ -494,7 +498,7 @@ class Chronowear : CanvasWatchFaceService() {
             val hourHandOffset = calendar.get(Calendar.MINUTE) / 2f
             val hoursRotation = calendar.get(Calendar.HOUR) * 30 + hourHandOffset
 
-            hands.draw(canvas, hoursRotation, minutesRotation, secondsRotation)
+            hands.draw(canvas, hoursRotation, minutesRotation, secondsRotation, previousSecondsRotation)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
@@ -600,8 +604,10 @@ class Chronowear : CanvasWatchFaceService() {
         fun handleUpdateTimeMessage() {
             invalidate()
             if (shouldTimerBeRunning()) {
+                val framesPerSecond = 60
+                val interactiveUpdateRateMs = 1000 / framesPerSecond
                 val timeMs = System.currentTimeMillis()
-                val delayMs = INTERACTIVE_UPDATE_RATE_MS - timeMs % INTERACTIVE_UPDATE_RATE_MS
+                val delayMs = interactiveUpdateRateMs - timeMs % interactiveUpdateRateMs
                 updateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs)
             }
         }

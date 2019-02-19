@@ -41,10 +41,10 @@ class Hands {
             }
         }
 
-    fun draw(canvas: Canvas, hourRotation: Float, minuteRotation: Float, secondRotation: Float?) {
+    fun draw(canvas: Canvas, hourRotation: Float, minuteRotation: Float, secondRotation: Float?, previousSecondRotation: Float?) {
         hourHand.draw(canvas, hourRotation)
         minuteHand.draw(canvas, minuteRotation)
-        secondRotation?.let { secondHand.draw(canvas, it) }
+        secondRotation?.let { secondHand.draw(canvas, it, previousSecondRotation) }
     }
 
 }

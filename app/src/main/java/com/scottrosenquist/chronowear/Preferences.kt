@@ -9,6 +9,7 @@ class Preferences(val context: Context) {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     var ambientFullMute by BooleanPreference(R.string.ambient_full_mute_preference, false)
+    var animatedSecondHand by BooleanPreference(R.string.animated_second_hand_preference, false)
 
     val accent = ColourPreference(R.string.accent_colour_preference, "#F44336", "Red")
     val background = ColourPreference(R.string.background_colour_preference, "#000000", "Black")
