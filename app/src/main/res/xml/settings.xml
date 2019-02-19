@@ -34,9 +34,9 @@
         android:title="Background Colour">
         <extra android:name="type" android:value="colour"/>
     </Preference>
-    <SwitchPreference
-        android:key="@string/ambient_full_mute_preference"
-        android:title="Ambient Full Mute" />
+    <!--<SwitchPreference-->
+        <!--android:key="@string/ambient_full_mute_preference"-->
+        <!--android:title="Ambient Full Mute" />-->
     <SwitchPreference
         android:key="@string/animated_second_hand_preference"
         android:title="Animated Second Hand" />
