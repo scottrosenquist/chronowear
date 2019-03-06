@@ -247,7 +247,7 @@ class Chronowear : CanvasWatchFaceService() {
             }
 
             notificationIndicatorPaint = Paint().apply {
-                color = Color.parseColor("#f44336")
+                color = preferences.accent.colour
                 isAntiAlias = true
             }
 
