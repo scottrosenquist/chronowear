@@ -69,7 +69,7 @@ val COMPLICATION_POSITIONS = arrayOf(
 //    complicationDrawableSparseArray[RIGHT_COMPLICATION_ID].bounds = complicationRect(right, center)
 //    complicationDrawableSparseArray[BOTTOM_COMPLICATION_ID].bounds = complicationRect(center, bottom)
 
-class Complications {
+class Complications(chronowear: Chronowear) {
 
 //    val leftDialComplication: Complication? = null
 //    val topDialComplication: Complication? = null
@@ -83,7 +83,7 @@ class Complications {
 //            BOTTOM_COMPLICATION_ID to bottomDialComplication
 //    )
 
-    var context: Context? = null
+    var context: Context = chronowear
         set(value) {
             field = value
             activeComplicationsMutableMap.forEach {
@@ -92,7 +92,7 @@ class Complications {
         }
 
 
-    val activeComplicationsMutableMap = mutableMapOf<Int, Complication>()
+    private val activeComplicationsMutableMap = mutableMapOf<Int, Complication>()
 
     fun updateComplicationData(complicationId: Int, complicationData: ComplicationData) {
         if (complicationId !in activeComplicationsMutableMap) {
@@ -109,13 +109,13 @@ class Complications {
 //            this.ambient = ambient
 //            this.watchFaceRadius = watchFaceRadius
 //        }
-        activeComplicationsMutableMap.put(complicationId, Complication().apply {
-            this.context = context
+        activeComplicationsMutableMap[complicationId] = Complication(context).apply {
+            //this.context = context
             this.lowBitAmbient = lowBitAmbient
             this.burnInProtection = burnInProtection
             this.ambient = ambient
             this.watchFaceRadius = watchFaceRadius
-        })
+        }
     }
 
     var lowBitAmbient = false
@@ -147,7 +147,7 @@ class Complications {
             field = value
             activeComplicationsMutableMap.forEach {
                 it.value.watchFaceRadius = watchFaceRadius
-                it.value.
+                // it.value.
             }
         }
 

@@ -7,12 +7,10 @@ import android.support.wearable.complications.ComplicationData
 import android.support.wearable.complications.rendering.ComplicationDrawable
 import kotlin.reflect.KProperty
 
-class Complication {
+class Complication(var context: Context) {
 //    val id: Int? = null
 
 //    val supportedTypes: IntArray? = null
-
-    var context: Context? = null
 
     private operator fun ComplicationDrawable.getValue(complication: Complication, property: KProperty<*>): ComplicationDrawable {
         return ComplicationDrawable(context)
@@ -24,7 +22,7 @@ class Complication {
             complicationDrawable.setComplicationData(value)
         }
 
-    val complicationDrawable by ComplicationDrawable()
+    private val complicationDrawable by ComplicationDrawable()
 
 //    val supportedComplicationDataTypes = intArrayOf(
 //            ComplicationData.TYPE_RANGED_VALUE,
@@ -63,7 +61,7 @@ class Complication {
         canvas.translate(position.x, position.y)
 
 //        canvas.drawText()
-//        complicationDrawable.draw(canvas, now)
+        complicationDrawable.draw(canvas, now)
         canvas.restore()
     }
 

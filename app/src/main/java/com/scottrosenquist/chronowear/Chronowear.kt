@@ -64,7 +64,7 @@ class Chronowear : CanvasWatchFaceService() {
 
         private var ticks = Ticks()
 
-        private var complications = Complications()
+        private var complications = Complications(this@Chronowear)
 
         private var registeredTimeZoneReceiver = false
         private var registeredBatteryReceiver = false
@@ -154,7 +154,7 @@ class Chronowear : CanvasWatchFaceService() {
 
             calendar = Calendar.getInstance()
 
-            complications.context = this@Chronowear
+            //complications.context = this@Chronowear
 
             setActiveComplications(*COMPLICATION_IDS)
 
