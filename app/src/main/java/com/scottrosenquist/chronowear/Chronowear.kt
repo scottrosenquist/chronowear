@@ -24,6 +24,11 @@ val preferences: Preferences by lazy {
     Chronowear.nonNullPreferences!!
 }
 
+<<<<<<< HEAD:app/src/main/java/com/scottrosenquist/chronowear/Chronowear.kt
+=======
+private const val INTERACTIVE_UPDATE_RATE_MS = 1000
+
+>>>>>>> 2392e2e9ae5664c4990156e40e337bdec158e1dd:app/src/main/java/com/example/scottrosenquist/chronowear/Chronowear.kt
 private const val MSG_UPDATE_TIME = 0 // Handler message id for updating the time periodically in interactive mode
 
 /**
@@ -64,7 +69,11 @@ class Chronowear : CanvasWatchFaceService() {
 
         private var ticks = Ticks()
 
+<<<<<<< HEAD:app/src/main/java/com/scottrosenquist/chronowear/Chronowear.kt
         private var complications = Complications(this@Chronowear)
+=======
+        private var complications = Complications()
+>>>>>>> 2392e2e9ae5664c4990156e40e337bdec158e1dd:app/src/main/java/com/example/scottrosenquist/chronowear/Chronowear.kt
 
         private var registeredTimeZoneReceiver = false
         private var registeredBatteryReceiver = false
@@ -154,7 +163,11 @@ class Chronowear : CanvasWatchFaceService() {
 
             calendar = Calendar.getInstance()
 
+<<<<<<< HEAD:app/src/main/java/com/scottrosenquist/chronowear/Chronowear.kt
             //complications.context = this@Chronowear
+=======
+            complications.context = this@Chronowear
+>>>>>>> 2392e2e9ae5664c4990156e40e337bdec158e1dd:app/src/main/java/com/example/scottrosenquist/chronowear/Chronowear.kt
 
             setActiveComplications(*COMPLICATION_IDS)
 
@@ -331,11 +344,18 @@ class Chronowear : CanvasWatchFaceService() {
             calendar.timeInMillis = now
 
             drawBackground(canvas)
+<<<<<<< HEAD:app/src/main/java/com/scottrosenquist/chronowear/Chronowear.kt
             drawTicks(canvas)
             complications.draw(canvas, now)
             if (useChronowearStatusBar && !(preferences.ambientFullMute && ambient && muteMode)) drawStatusIcons(canvas)
             if (useChronowearNotificationIndicator && !(preferences.ambientFullMute && muteMode)) drawNotificationIndicator(canvas)
             drawHands(canvas)
+=======
+            complications.draw(canvas, now)
+            if (useChronowearStatusBar) drawStatusIcons(canvas)
+            drawWatchFace(canvas)
+            if (useChronowearNotificationIndicator) drawNotificationIndicator(canvas)
+>>>>>>> 2392e2e9ae5664c4990156e40e337bdec158e1dd:app/src/main/java/com/example/scottrosenquist/chronowear/Chronowear.kt
         }
 
         private fun drawBackground(canvas: Canvas) {

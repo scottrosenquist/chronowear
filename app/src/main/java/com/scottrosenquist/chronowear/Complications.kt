@@ -1,4 +1,4 @@
-package com.scottrosenquist.chronowear
+package com.example.scottrosenquist.chronowear
 
 import android.content.Context
 import android.graphics.Canvas
@@ -69,7 +69,7 @@ val COMPLICATION_POSITIONS = arrayOf(
 //    complicationDrawableSparseArray[RIGHT_COMPLICATION_ID].bounds = complicationRect(right, center)
 //    complicationDrawableSparseArray[BOTTOM_COMPLICATION_ID].bounds = complicationRect(center, bottom)
 
-class Complications(chronowear: Chronowear) {
+class Complications {
 
 //    val leftDialComplication: Complication? = null
 //    val topDialComplication: Complication? = null
@@ -83,7 +83,7 @@ class Complications(chronowear: Chronowear) {
 //            BOTTOM_COMPLICATION_ID to bottomDialComplication
 //    )
 
-    var context: Context = chronowear
+    var context: Context? = null
         set(value) {
             field = value
             activeComplicationsMutableMap.forEach {
@@ -92,7 +92,7 @@ class Complications(chronowear: Chronowear) {
         }
 
 
-    private val activeComplicationsMutableMap = mutableMapOf<Int, Complication>()
+    val activeComplicationsMutableMap = mutableMapOf<Int, Complication>()
 
     fun updateComplicationData(complicationId: Int, complicationData: ComplicationData) {
         if (complicationId !in activeComplicationsMutableMap) {
@@ -109,13 +109,13 @@ class Complications(chronowear: Chronowear) {
 //            this.ambient = ambient
 //            this.watchFaceRadius = watchFaceRadius
 //        }
-        activeComplicationsMutableMap[complicationId] = Complication(context).apply {
-            //this.context = context
+        activeComplicationsMutableMap.put(complicationId, Complication().apply {
+            this.context = context
             this.lowBitAmbient = lowBitAmbient
             this.burnInProtection = burnInProtection
             this.ambient = ambient
             this.watchFaceRadius = watchFaceRadius
-        }
+        })
     }
 
     var lowBitAmbient = false
@@ -147,7 +147,7 @@ class Complications(chronowear: Chronowear) {
             field = value
             activeComplicationsMutableMap.forEach {
                 it.value.watchFaceRadius = watchFaceRadius
-                // it.value.
+                it.value.
             }
         }
 
@@ -210,27 +210,6 @@ class Complications(chronowear: Chronowear) {
 //            vertical - halfAComplication,
 //            horizontal + halfAComplication,
 //            vertical + halfAComplication
-//    )
-//
-//    complicationDrawableSparseArray[LEFT_COMPLICATION_ID].bounds = complicationRect(left, center)
-//    complicationDrawableSparseArray[TOP_COMPLICATION_ID].bounds = complicationRect(center, top)
-//    complicationDrawableSparseArray[RIGHT_COMPLICATION_ID].bounds = complicationRect(right, center)
-//    complicationDrawableSparseArray[BOTTOM_COMPLICATION_ID].bounds = complicationRect(center, bottom)
-
-
-//    val center = width * 0.5f
-//    val distanceFromCenter = width * 0.20f
-//    val left = center - distanceFromCenter
-//    val top = center - distanceFromCenter
-//    val right = center + distanceFromCenter
-//    val bottom = center + distanceFromCenter
-//    val halfAComplication = width * 0.125f
-//
-//    fun complicationRect(horizontal: Float, vertical: Float) = Rect(
-//            (horizontal - halfAComplication).roundToInt(),
-//            (vertical - halfAComplication).roundToInt(),
-//            (horizontal + halfAComplication).roundToInt(),
-//            (vertical + halfAComplication).roundToInt()
 //    )
 //
 //    complicationDrawableSparseArray[LEFT_COMPLICATION_ID].bounds = complicationRect(left, center)
